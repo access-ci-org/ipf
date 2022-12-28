@@ -1,18 +1,18 @@
 
-# ipf-xsede %VER%-%REL%
+# access-ci-org/ipf %VER%-%REL%
 # README
+
 ## Overview
 
-The Information Publishing Framework (IPF) is a generic framework for gathering and publishing information. IPF
-focuses narrowly on gatethering and publishing, and not on analyzing or visualizing information. IPF grew out of
-work to publish information about TeraGrid compute resources using the
-[GLUE 2 specification](http://www.ogf.org/documents/GFD.147.pdf). IPF continues to support data gathering and
-publishing in the ACCESS-CI program which succeeded XSEDE and TeraGrid.
+The Information Publishing Framework (IPF) is a generic framework used by resource operators to gather and publish
+dynamic resource information in [GLUE 2 serialized format](http://www.ogf.org/documents/GFD.147.pdf). IPF was used
+by the TeraGrid, XSEDE, and XSEDE 2 programs, and is currently being used by the ACCESS-CI program to publish
+high-performance compute cluster information.
 
 IPF gathers and publishes information using simple workflows. These workflows are defined using JSON (see the
 etc/workflows directory) and steps in the workflows are implemented as Python classes. Each step in the
 workflow can require input Data, can produce output Data, and can publish Representations of Data. A typical
-workflow consists of a number of information gathering steps and a few steps that publish Representations to
+workflow consists of a number of information gathering steps and a few steps that publish representations to
 files or to remote services (e.g. REST, messaging).
 
 Workflow steps specify what Data they require and what Data they produce. This allows IPF to construct
@@ -30,19 +30,23 @@ quickly and the program libexec/run_workflow_daemon.py is used to manage long-ru
 
 ## License
 
-This software is licensed under Version 2.0 of the Apache License.
+This software is licensed the Apache License Version 2.0.
 
 ## Installation
 
 Installation instructions are in [docs/INSTALL.md](docs/INSTALL.md).
 
-## Contact Information
+## Support Information
 
-This software is maintained by ACCESS-CI, though its source is still currently found in the XSEDE github organization. [XSEDE](https://www.github.com/XSEDE).  and you can contact the ACCESS-CI helpdesk if you need help using it. 
+This software is currently maintained by the ACCESS CONECT project.
 
-If you have problems with this software you are welcome to submit an [issue](https://github.com/XSEDE/ipf/issues).
+The source is maintained in the [ACCESS-CI GitHub](https://github.com/access-ci-org/ipf).  ACCESS-CI resource
+providers and other members of the ACCESS-CI community are encourage to contribute bug fixes and improvements.
+
+Software bugs may be reported as GitHub issues.  ACCESS-CI related support requests should be submitted through
+the ACCESS-CI ticket system.
 
 ## Acknowledgements
 
-This work was supported by the TeraGrid, XSEDE, FutureGrid, and XSEDE 2 projects under National Science Foundation
-grants 0503697, 1053575, 0910812, and 1548562.
+This work was supported by the TeraGrid, XSEDE, FutureGrid, XSEDE 2, and ACCESS CONECT projects under
+National Science Foundation grants 0503697, 1053575, 0910812, 1548562, and 2138307.

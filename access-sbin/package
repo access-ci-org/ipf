@@ -35,7 +35,7 @@ for i in $FILES;do
   sed -e "s,%VER%,$VER,g" \
       -e "s,%REL%,$REL,g" \
       $i \
-      >xsede-sbin/$OUTDIR/$iout
+      >access-sbin/$OUTDIR/$iout
 done
 cd $HERE
 mv $OUTDIR/docs/INSTALL.md $OUTDIR/INSTALL.md

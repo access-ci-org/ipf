@@ -1,4 +1,4 @@
-# ipf-xsede %VER%-%REL%
+# access-ci-org/ipf %VER%-%REL%
 =====================
 
 
@@ -10,28 +10,13 @@
 ------------
 
 
-The *Information Publishing Framework* ["IPF" (1)](#IPF) is a tool used by
-resource operators to publish dynamic resource information to XSEDE's
-[Information Services (2)](#infoserv). IPF can publish four types of resource
-Information: 1) Batch system configuration and queue
-contents, 2) Software Modules available from the command line, 3)
-Network services information, and 4) Batch scheduler job events.
+The *Information Publishing Framework* ["IPF" (1)](#IPF) is a generic framework used by resource operators to gather and publish
+dynamic resource information in [GLUE 2 serialized format](http://www.ogf.org/documents/GFD.147.pdf). IPF can publish four types
+of resource information: 1) Batch system configuration and queue contents, 2) Software Modules available from the command line,
+3) Network services information, and 4) Batch scheduler job events.
 
-
-XSEDE required Level 1, 2, and 3 operators to publish this [dynamic
-resource information (3)](#softserv) using IPF to the degree that is possible for each type of resource..
-
-
-IPF complements XSEDE's [Resource Description Repository "RDR" (4)](#RDR) which
-is used to maintain static resource information.  The evolution of RDR continues to exist in ACCESS-CI.
-
-
-Campuses and other research resource operators that are not affiliated
-with ACCESS-CI are welcome to use IPF and to publish their resource
-information to ACCESS-CI Information Services. By doing so, local operator services,
-portals, and gateways can use ACCESS-CI Information Services APIs to access
-their published local resource information in the same way that ACCESS-CI resources, portals, and gateways do.
-
+Campuses and other research resource operators that are not affiliated with ACCESS-CI are welcome to use IPF. All information
+published using IPF is available to portals and to science gateways through ACCESS Operations APIs.
 
 This document describes how to install and configure IPF.
 
@@ -43,45 +28,38 @@ This document describes how to install and configure IPF.
 ### What is IPF?
 
 
-IPF is a Python program that gathers resource information, formats it in
-a [GLUE2 standard format (5)](#glue2), and publishes it to XSEDE's Information Services.
-IPF is configured to run one or more “workflows” that define the steps
-that IPF executes to discover, format, and publish a specific type of resource information.
+IPF is a Python program that gathers resource information, formats it in a [GLUE2 standard format (5)](#glue2), and publishes it
+to a RabbitMQ service. IPF is configured to run one or more “workflows” each defining the steps that IPF executes to collect,
+format, and publish a specific type of resource information.
 
 
 ### How is an IPF workflow defined?
 
 
-Each IPF workflow consists of a series of "steps" with inputs,
-outputs, and dependencies. The steps for each workflow are defined in
-one or more JSON formatted files. Workflow JSON files can incorporate
-other workflow JSON files: for example, the `<resource>_services_periodic.json`
-workflow contains one step, which is the `<resource>_services.json` workflow.
+Each IPF workflow consists of a series of "steps" with inputs, outputs, and dependencies. The steps for each workflow are defined
+in one or more JSON formatted files. Workflow JSON files can incorporate other workflow JSON files: for example,
+the `<resource>_services_periodic.json` workflow contains one step, which is the `<resource>_services.json` workflow.
 
 
-IPF workflows are typically defined by JSON files under
-$IPF_ETC_PATH/ipf/workflow/, particularly in $IPF_ETC_PATH/ipf/workflow/glue2.
+IPF workflows are typically defined by JSON files under $IPF_ETC_PATH/ipf/workflow/, particularly in $IPF_ETC_PATH/ipf/workflow/glue2.
 
 
 ### How is an IPF workflow invoked?
 
 
-To run a workflow execute the ipf_workflow program passing it a
-workflow definition file argument, like this:
+To run a workflow execute the ipf_workflow program passing it a workflow definition file argument, like this:
 
 
     $INSTALL_DIR/ipf-VERSION/ipf/bin/ipf_workflow <workflow.json>
 
 
-Workflow JSON files are specified relative to $IPF_ETC_PATH, so
-`ipf_workflow sysinfo.json` and
-`ipf_workflow glue2/<resource>_services.json` are both valid
-invocations.
+Workflow JSON files are specified relative to $IPF_ETC_PATH, for example:
+`ipf_workflow sysinfo.json`
+`ipf_workflow glue2/<resource>_services.json`
 
 
-Part of workflow configuration includes generating $IPF_ETC_PATH/ipf/init.d
- scripts to run a workflow periodically. These scripts are usually copied to the system
-/etc/init.d directory during installation.
+Part of workflow configuration includes generating $IPF_ETC_PATH/ipf/init.d scripts to run a workflow periodically.
+These scripts are usually copied to the system /etc/init.d directory during installation.
 
 
 ### Which workflows should I configure and run?
@@ -89,21 +67,13 @@ Part of workflow configuration includes generating $IPF_ETC_PATH/ipf/init.d
 
 The following workflows are recommended for the listed scenarios.
 
+Batch System workflow (compute workflow): *clusters with batch systems*
 
-Batch System workflow (compute workflow): *required* for all Level 1, 2,
-and 3 *SPs that offer batch computing*
+Software Module workflow: *clusters with command line software modules*
 
+Network Accessible Services workflow: *clusters with with edge services like openssh*
 
-Software Module workflow: *required* for all Level 1, 2 and 3 *SPs that
-offer login and batch computing*
-
-
-Network Accessible Services workflow: *recommended* for all Level 1, 2,
-and 3 *SPs that operate OpenSSH login services*
-
-
-Batch Scheduler Job Event workflow (activity workflow): *recommended* for
-all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
+Batch Scheduler Job Event workflow (activity workflow): *clusters that want to support live job event subscriptions*
 
 
 ## Pre-requisites
@@ -113,30 +83,22 @@ all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
 -------------------------
 
 
--   Before installing IPF operators should register their resource in
-    [RDR (4)](#RDR).  While IPF is capable of publishing information about resources
-    that are not found in RDR, our intent here is to publish information about
-    XSEDE resources, which should match/map to what is found in RDR.
+-   Before installing IPF operators should register their cluster resource in [CiDeR (4)](#CIDER).
+    While IPF is capable of publishing information for resources not in CiDeR, ACCESS needs resource
+    descriptions in CiDeR to complement the information published with IPF.
 
 
--   Identify a single server to run IPF -- a single IPF instance can be used to
-    publish information for multiple resources.
+-   Identify a single server to run IPF -- a single IPF instance can be used to publish information for multiple resources.
 
 
--   To install IPF on machines that are part of multiple XSEDE resources
-    please first review [XSEDE's Advanced Integration Options](https://www.ideals.illinois.edu/bitstream/handle/2142/99081/XSEDE_SP_Advanced_Integration_Options.pdf)
-    documentation.
+-   To install IPF on a cluster that presents publicly as multiple resources please review this document:
+    [Advanced Integration Options](https://www.ideals.illinois.edu/bitstream/handle/2142/99081/XSEDE_SP_Advanced_Integration_Options.pdf)
 
 -   Decide what installation method to use: 
-    *     RPM is recommended for production installs, as it is managed by system
-          tools, and creates an "xdinfo" user to run the workflows.
-    *     Pip is easier for installs where root access is not available, though
-          some additional environment variables will need to be set.
+    *     RPM is recommended for production installs, as it is managed by system tools, and creates an "xdinfo" user to run the workflows.
+    *     Pip is easier for installs where root access is not available, though some additional environment variables will need to be set.
 
-
--   If you already have an older IPF create a backup of the /etc/ipf
-    working configurations:
-
+-   If you already have an older IPF create a backup of the /etc/ipf working configurations:
 
     $ tar -cf ipf-etc-yyyymmdd.tar /etc/ipf
 
@@ -144,8 +106,7 @@ all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
 ### Batch System workflow requirements
 
 
--   The command line programs for your batch scheduler must be
-    executable.
+-   The command line programs for your batch scheduler must be executable.
 
 
 ### Software Modules workflow requirements
@@ -157,18 +118,16 @@ all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
 ### Network Services workflow requirements
 
 
--   The service definition files must be readable, and in a single
-    directory.  See Configuring.Service.Files.md for more information
+-   The service definition files must be readable, and in a single directory. 
+    See Configuring.Service.Files.md for more information
 
 
 ### Batch Scheduler Job Events workflow requirements
 
 
--   The batch scheduler log file or directory must be readable on the
-    server where IPF is running and by the user running IPF.
--   The batch scheduler must be logging at the right level of detail for
-    the IPF code to be able to parse the events. See the section:
-    Configuring Torque Logging.
+-   The batch scheduler log file or directory must be readable on the server where IPF is running and by the user running IPF.
+-   The batch scheduler must be logging at the right level for the IPF code to be able to parse the events.
+    See the Configuring Torque Logging section.
 
 
 
@@ -186,29 +145,24 @@ all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
 --------------
 
 
-There are two recommended ways to install IPF: you can use pip install,
-or you can install from the XSEDE RPMs on software.xsede.org.
+There are two recommended ways to install IPF: you can use pip install, or you can install from ACCESS RPMs on software.xsede.org.
 
-
-Installing IPF from RPMs will put it in the directories
-/usr/lib/python-`<VERSION>`/site-packages/ipf, /etc/ipf, /var/ipf).
-
+Installing IPF from RPMs will put it in the directories /usr/lib/python-`<VERSION>`/site-packages/ipf, /etc/ipf, /var/ipf).
 
 To install to an alternate location we recommend using pip.
 
 
-### Pip installation
+### PIP installation
 
 
-To install using pip, you need to have the pip package installed in an
-appropriate version of Python (3.6+). We recommend using venv to manage
-Python installations. More information on venv is available at
+To install using pip, you need to have the pip package installed in an appropriate version of Python (3.6+).
+We recommend using venv to manage Python installations. More information on venv is available at
 <https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/>
 
-Depending on how many python versions are in place on your system, "pip" may or may not refer to the python 3 version.  "pip3" should always unambiguously refer to a python3 version of pip.
+Depending on how many python versions are in place on your system, "pip" may or may not refer to the python 3 version.
+"pip3" should always unambiguously refer to a python3 version of pip.
 
-Once you have a Python 3.6 environment (whether venv or not), to install
-execute:
+Once you have a Python 3.6 environment (whether venv or not), to install execute:
 
 
     $ pip3 install ipf
@@ -222,8 +176,7 @@ find as its IPF_ETC_PATH (/etc/ipf in an RPM install) is relative to
 the Python site-packages directory.
 
 
-You can find your site-packages path for the Python you used for the pip
-install with: 
+You can find your site-packages path for the Python you used for the pip install with: 
 
 
      $ python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
@@ -250,11 +203,10 @@ Note(s): - The RPM will automatically create an "xdinfo" account that
 will own the install and that will execute the workflows via sudo.
 
 
-Steps: 1) Configure XSEDE RPM repository trust. For a production version
-use [Production Repo Trust
-Instructions](https://software.xsede.org/production/repo/repoconfig.txt).
-For a development/testing version use [Development Repo Trust
-Instructions](https://software.xsede.org/development/repo/repoconfig.txt).
+Steps: 1) Configure XSEDE RPM repository trust. For a production version use
+    [Production Repo Trust Instructions](https://software.xsede.org/production/repo/repoconfig.txt).
+For a development/testing version use
+    [Development Repo Trust Instructions](https://software.xsede.org/development/repo/repoconfig.txt).
 
 
 2)  Install ipf-xsede
@@ -322,11 +274,11 @@ These options mean:
                                    and returns the desired name 
 --workflows           Comma delimited list of workflows to configure.  Values can include:
                              compute, activity, extmodules, services
---publish_to_xsede        Necessary if you wish to configure your workflow to publish to XSEDE’s
+--publish_to_xsede        Necessary if you wish to configure your workflow to publish to ACCESS's
                                       AMQP service for inclusion in Information Services
 
 
---amqp_certificate        The path to the certificate to use to authenticate with XSEDE’s AMQP
+--amqp_certificate        The path to the certificate to use to authenticate with ACCESS’s AMQP
 
 
 --amqp_key                  The path to the key for your certificate
@@ -373,7 +325,7 @@ $ ipf_configure_xsede ----help
     by the user that runs the information gathering workflows.
 
 
--   Submit an XSEDE ticket to authorize your server to publish XSEDE's
+-   Submit an ACCESS ticket to authorize your server to publish ACCESS's
     RabbitMQ services. If you will authenticate via X.509, include the
     output of 'openssl x509 -in path/to/cert.pem -nameopt RFC2253
     -subject -noout' in your ticket. If you will authenticate via
@@ -401,7 +353,7 @@ Execute:
 
 
 If you encounter any errors or the script does not cover your situation,
-Please submit an XSEDE ticket.
+Please submit an ACCESS ticket.
 
 
 When the script exits, the etc/ipf/workflow/glue2/ directory will
@@ -510,13 +462,12 @@ Valid Capability values are listed in the table below. Please edit your
 service.conf files to include appropriate Capability values.
 
 
-A key/value pair for SupportStatus in your service.conf file will
-override the default, which is the support status of your service as
-published in RDR.
+A key/value pair for SupportStatus in your service.conf file will override the default,
+which is the support status of your service as published in CiDeR.
 
 
 Globus Connect Server (GCS) services should not be registered as network services.
-XSEDE discovers these automatically from Globus.
+ACCESS discovers these automatically from Globus.
 
 
 ------------------------------------------------------------------------
@@ -526,9 +477,6 @@ A table of valid Name, Version and Capability values:
 
 
     Name                Version        Capability
-    org.globus.gridftp  {5,6}.y.z      data.transfer.striped
-                                       data.transfer.nonstriped
-        
     org.globus.openssh  5.y.z          login.remoteshell
                                        login.remoteshell.gsi
 
@@ -536,17 +484,16 @@ A table of valid Name, Version and Capability values:
 Sample Service publishing file:
     #%Service1.0###################################################################
     ##
-    ## serviceinfofiles/org.globus.gridftp-6.0.1.conf
+    ## serviceinfofiles/org.openssh-x.y.z.conf
     ##
 
 
-    Name = org.globus.gridftp
-    Version = 6.0.1
-    Endpoint = gsiftp://$GRIDFTP_PUBLIC_HOSTNAME:2811/
-    Extensions.go_transfer_xsede_endpoint_name = "default"
-    Capability = data.transfer.striped
-    Capability = data.transfer.nonstriped
-    SupportStatus = testing
+    Name = org.openssh
+    Version = 8.x
+    Endpoint = delta.ncsa.xsede.org 
+    Capability = login.shell.local-password-mfa
+    Capability = login.shell.pubkey
+    SupportStatus = production
 
 
 ## Software Module Publishing Best Practices
@@ -586,8 +533,8 @@ The URL field should point to local user documentation.
 
 
 The Category field may contain one or more comma separated fields of
-science or software categories. XSEDE's official fields of science are
-listed at `https://info.xsede.org/wh1/xdcdb/v1/fos/?hierarchy=true`.
+science or software categories. ACCESS's official fields of science are
+listed at `https://operations-api.access-ci.org/wh2/api/schema/swagger-ui/`.
 Some recommended software categories are: data, compiler, language,
 debugger, profiler, optimization, system, utilities. Category values are
 discoverable in the Research Software Portal in the software *Topics*
@@ -604,28 +551,21 @@ The SupportContact field must contain either: * the exact URL:
 `https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/helpdesk.xsede.org/`
 
 
--   another URL that returns a JSON document formatted exactly like the
-    one shown above (but with different values)
+-   another URL that returns a JSON document formatted exactly like the one shown above (but with different values)
 
 
 -   or a one-liner JSON blob of the form:
-    `[{"GlobalID":"helpdesk.xsede.org","Name":"XSEDE Help Desk","Description":"XSEDE 24/7 support help desk","ShortName":"XSEDE","ContactEmail":"help@xsede.org","ContactURL":"https://www.xsede.org/get-help","ContactPhone":"1-866-907-2383"}]`
-
-
-IMPORTANT: * The XSEDE user portal only displays software with a
-SupportContact containing the exact URL above. * Modules that do not
-have a SupportContact can have a default value assigned by the Workflow
+    `[{"GlobalID":"support.access-ci.org","Name":"ACCESS Support","Description":"ACCESS Support","ShortName":"ACCESS","ContactURL":"https://support.access-ci.org"}]`
 
 
 All XSEDE registered support contact organizations are found at:
-`https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/`. To register a
-new support contact e-mail help@xsede.org using the Subject: Please
-register a new Support Contact Organization in the CSR.
+`https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/`
+To register a new support contact submit a ticket to ACCESS Operations with the
+Subject: Please register a new Support Contact Organization.
 
 
-`ipf_configure_xsede` offers the opportunity to define a default
-SupportContact that is published for every module that does not define
-its own. By default, this value is:
+`ipf_configure_xsede` offers the opportunity to define a default SupportContact that is published for every module
+that does not define its own. By default, this value is:
 `https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/helpdesk.xsede.org/`
 
 
@@ -634,14 +574,14 @@ Example:
 
     #%Module1.0#####################################################################
     ##
-    ## modulefiles/xdresourceid/1.0
+    ## modulefiles/accessusage/1.5.2
     ##
-    module-whatis "Description: XSEDE Resource Identifier Tool"
-    module-whatis "URL: http://software.xsede.org/development/xdresourceid/"
+    module-whatis "Description: ACCESS Allocation Usage lookup tool"
+    module-whatis "URL: http://software.xsede.org/production/accessusage/latest/"
     module-whatis "Category: System tools"
     module-whatis "Keywords: information"
     module-whatis "SupportStatus: testing"
-    module-whatis "SupportContact: https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/helpdesk.xsede.org/"
+    module-whatis "SupportContact: https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/support.access-ci.org/"
 
 
 However, IPF would read these just as well if they were:
@@ -649,20 +589,19 @@ However, IPF would read these just as well if they were:
 
     #%Module1.0#####################################################################
     ##
-    ## modulefiles/xdresourceid/1.0
+    ## modulefiles/accessusage/1.5.2
     ##
-    #module-whatis "Description: XSEDE Resource Identifier Tool"
-    # "URL: http://software.xsede.org/development/xdresourceid/"
+    #module-whatis "Description: Allocation Usage lookup tool"
+    # "URL: http://software.xsede.org/production/accessusage/latest/"
     # Random text that is irrelevant "Category: System tools"
     # module-whatis "Keywords: information"
     module-whatis "SupportStatus: testing"
-    module-whatis "SupportContact: https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/helpdesk.xsede.org/"
+    module-whatis "SupportContact: https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/support.access-ci.org/"
 
 
-With this in mind, XSEDE recommends that you add these fields to
-relevant module files. The decision on whether to include them as
-module-whatis lines (and therefore visible as such to local users) or to
-include them as comments is up to each operator.
+With this in mind, it is recommended that you add these fields to relevant module files.
+The decision on whether to include them as module-whatis lines (and therefore visible as
+such to local users) or to include them as comments is up to each operator.
 
 
 ## Testing
@@ -686,8 +625,8 @@ contain messages resembling:
 
 
     2013-05-30 15:27:05,309 - ipf.engine - INFO - starting workflow extmodules
-    2013-05-30 15:27:05,475 - ipf.publish.AmqpStep - INFO - step-3 - publishing representation ApplicationsOgfJson of Applications lonestar4.tacc.teragrid.org
-    2013-05-30 15:27:05,566 - ipf.publish.FileStep - INFO - step-4 - writing representation ApplicationsOgfJson of Applications lonestar4.tacc.teragrid.org
+    2013-05-30 15:27:05,475 - ipf.publish.AmqpStep - INFO - step-3 - publishing representation ApplicationsOgfJson of Applications expanse.sdsc.access-ci.org
+    2013-05-30 15:27:05,566 - ipf.publish.FileStep - INFO - step-4 - writing representation ApplicationsOgfJson of Applications expanse.sdsc.access-ci.org
     2013-05-30 15:27:06,336 - ipf.engine - INFO - workflow succeeded
 
 
@@ -698,10 +637,10 @@ environment not having specific variables or commands available.
 
 This workflow describes your modules as a JSON document containing GLUE
 v2.0 Application Environment and Application Handle objects. This
-document is published to the XSEDE messaging services in step-3 and is
+document is published to the ACCESS RabbitMQ service in step-3 and is
 written to a local file in step-4. You can examine this local file in
 /var/ipf/RESOURCE_NAME_apps.json. If you see any errors in gathering
-module information, please submit an XSEDE ticket to SD&I.
+module information, please submit an ACCESS ticket.
 
 
 2)  To test the compute workflow, execute:
@@ -714,10 +653,10 @@ This init script starts a workflow that periodically gathers (every
 minute by default) and publishes information about your compute
 resource. This workflow generates two types of documents. The first type
 describes the current state of your resource. This document doesn't
-contain sensitive information and XSEDE makes it available without
+contain sensitive information and ACCESS makes it available without
 authentication. The second type describes the queue state of your
 resource, contains sensitive information (user names), and will only be
-made available to authenticated XSEDE users.
+made available to authenticated ACCESS users.
 
 
 The log file is in /var/ipf/RESOURCE_NAME_compute.log (or
@@ -726,10 +665,10 @@ contain messages resembling:
 
 
     2013-05-30 15:50:43,590 - ipf.engine - INFO - starting workflow sge_compute
-    2013-05-30 15:50:45,403 - ipf.publish.AmqpStep - INFO - step-12 - publishing representation PrivateOgfJson of Private stampede.tacc.teragrid.org
-    2013-05-30 15:50:45,626 - ipf.publish.FileStep - INFO - step-14 - writing representation PrivateOgfJson of Private stampede.tacc.teragrid.org
-    2013-05-30 15:50:45,878 - ipf.publish.AmqpStep - INFO - step-11 - publishing representation PublicOgfJson of Public stampede.tacc.teragrid.org
-    2013-05-30 15:50:46,110 - ipf.publish.FileStep - INFO - step-13 - writing representation PublicOgfJson of Public stampede.tacc.teragrid.org
+    2013-05-30 15:50:45,403 - ipf.publish.AmqpStep - INFO - step-12 - publishing representation PrivateOgfJson of Private expanse.sdsc.access-ci.org
+    2013-05-30 15:50:45,626 - ipf.publish.FileStep - INFO - step-14 - writing representation PrivateOgfJson of Private expanse.sdsc.access-ci.org
+    2013-05-30 15:50:45,878 - ipf.publish.AmqpStep - INFO - step-11 - publishing representation PublicOgfJson of Public expanse.sdsc.access-ci.org
+    2013-05-30 15:50:46,110 - ipf.publish.FileStep - INFO - step-13 - writing representation PublicOgfJson of Public expanse.sdsc.access-ci.org
     2013-05-30 15:50:46,516 - ipf.engine - INFO - workflow succeeded
 
 
@@ -767,14 +706,14 @@ contain messages resembling:
     2013-05-30 16:04:26,038 - glue2.pbs.ComputingActivityUpdateStep - INFO - step-3 - running
     2013-05-30 16:04:26,038 - glue2.log - INFO - opening file 27-6930448 (/opt/pbs6.2/default/common/reporting)
     2013-05-30 16:05:50,067 - glue2.log - INFO - reopening file 27-6930448 (/opt/pbs6.2/default/common/reporting)
-    2013-05-30 16:05:50,089 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226387.user.resource.xsede.org
-    2013-05-30 16:05:50,493 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226814.user.resource.xsede.org
+    2013-05-30 16:05:50,089 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226387.user.resource.access-ci.org
+    2013-05-30 16:05:50,493 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226814.user.resource.access-ci.org
     2013-05-30 16:06:12,109 - glue2.log - INFO - reopening file 27-6930448 (/opt/pbs6.2/default/common/reporting)
-    2013-05-30 16:06:12,361 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226867.user.resource.xsede.org
-    2013-05-30 16:06:12,380 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226868.user.resource.xsede.org
-    2013-05-30 16:06:12,407 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226788.user.resource.xsede.org
-    2013-05-30 16:06:12,428 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226865.user.resource.xsede.org
-    2013-05-30 16:06:12,448 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226862.user.resource.xsede.org
+    2013-05-30 16:06:12,361 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226867.user.resource.access-ci.org
+    2013-05-30 16:06:12,380 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226868.user.resource.access-ci.org
+    2013-05-30 16:06:12,407 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226788.user.resource.access-ci.org
+    2013-05-30 16:06:12,428 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226865.user.resource.access-ci.org
+    2013-05-30 16:06:12,448 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226862.user.resource.access-ci.org
     ...
 
 
@@ -801,8 +740,8 @@ contain messages resembling:
 
 
     2013-05-30 15:27:05,309 - ipf.engine - INFO - starting workflow s
-    2013-05-30 15:27:05,475 - ipf.publish.AmqpStep - INFO - step-3 - publishing representation ASOgfJson of AbstractServices lonestar4.tacc.teragrid.org
-    2013-05-30 15:27:05,566 - ipf.publish.FileStep - INFO - step-4 - writing representation ASOgfJson of AbstractServices lonestar4.tacc.teragrid.org
+    2013-05-30 15:27:05,475 - ipf.publish.AmqpStep - INFO - step-3 - publishing representation ASOgfJson of AbstractServices expanse.sdsc.access-ci.org
+    2013-05-30 15:27:05,566 - ipf.publish.FileStep - INFO - step-4 - writing representation ASOgfJson of AbstractServices expanse.sdsc.access-ci.org
     2013-05-30 15:27:06,336 - ipf.engine - INFO - workflow succeeded
 
 
@@ -813,10 +752,10 @@ environment not having specific variables or commands available.
 
 This workflow describes your modules as a JSON document containing GLUE
 v2.0 Application Environment and Application Handle objects. This
-document is published to the XSEDE messaging services in step-3 and is
+document is published to the ACCESS RabbitMQ services in step-3 and is
 written to a local file in step-4. You can examine this local file in
 /var/ipf/RESOURCE_NAME_apps.json. If you see any errors in gathering
-module information, please submit an XSEDE ticket to SD&I.
+module information, please submit an ACCESS ticket.
 
 
 ## Log File Management
@@ -837,11 +776,9 @@ corresponding ipf service.
 
 
 - <a name="IPF">(1) IPF is open source and maintained at
-    [https://github.com/XSEDE/ipf](https://github.com/XSEDE/ipf.).</a>
-- <a name="infoserv">(2) [XSEDE Information Services](https://info.xsede.org/).</a>
-- <a name="softserv">(3) [XSEDE Software and Services Table for Service
-    Providers](https://www.ideals.illinois.edu/handle/2142/85886).</a>
-- <a name="RDR">(4) [Resource Description Repository "RDR"](https://rdr.xsede.org/).</a>
+    [https://github.com/access-ci-org/ipf](https://github.com/access-ci-org/ipf).</a>
+- <a name="infoserv">(2) [ACCESS Information Sharing Platform](https://operations-api.access-ci.org/).</a>
+- <a name="CiDeR">(4) [CyberInfrastructure Description Repository "CiDeR"](https://cider.access-ci.org/).</a>
 - <a name="glue2">(5) [GLUE2 Standard Format](https://www.ogf.org/documents/GFD.147.pdf).</a>
 
 
