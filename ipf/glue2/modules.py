@@ -21,6 +21,7 @@ import re
 import hashlib
 
 from ipf.error import StepError
+from ipf.urnprefix import IPF_URN_PREFIX
 from . import application
 from . import service
 from .types import AppEnvState, ApplicationHandle
@@ -397,7 +398,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         handle = application.ApplicationHandle()
         handle.Type = ApplicationHandle.MODULE
         handle.Value = env.AppName+"/"+env.AppVersion
-        env.ExecutionEnvironmentID = "urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s" % (
+        env.ExecutionEnvironmentID = IPF_URN_PREFIX+"ExecutionEnvironment:%s" % (
             self.resource_name)
 
         if publishflag == True:

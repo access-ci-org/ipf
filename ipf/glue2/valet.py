@@ -22,6 +22,7 @@ import re
 import hashlib
 
 from ipf.error import StepError
+from ipf.urnprefix import IPF_URN_PREFIX
 from . import application
 from .types import AppEnvState, ApplicationHandle
 
@@ -99,7 +100,7 @@ class VALETApplicationsStep(application.ApplicationsStep):
                                 handle.Type = ApplicationHandle.VALET
                                 handle.Value = str(versId)
 
-                                # env.ExecutionEnvironmentID = 'urn:ogf:glue2:xsede.org:ExecutionEnvironment:{:s}'.format(self.resource_name)
+                                # env.ExecutionEnvironmentID = IPF_URN_PREFIX+'ExecutionEnvironment:{:s}'.format(self.resource_name)
                                 apps.add(env, [handle])
 
         except Exception as e:

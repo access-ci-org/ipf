@@ -16,20 +16,20 @@
       }
     },
     {
-      "description": "Publish document to XSEDE",
+      "description": "Publish document to ACCESS",
       "name": "ipf.publish.AmqpStep",
       "params": {
         "publish": ["ipf.fileread.FileContentsRaw"],
-        "vhost": "xsede",
+        "vhost": "infopub",
         "exchange": "<EXCHANGE>",
         "username": "<USERNAME>",
         "password": "<PASSWORD>",
         "services": [
-          "infopub.xsede.org",
-          "infopub-alt.xsede.org"
+          "opspub1.access-ci.org",
+          "opspub2.access-ci.org"
         ],
         "ssl_options": {
-          "ca_certs": "xsede/ca_certs.pem"
+          "ca_certs": "ca-certificates/ca_certs.pem"
         }
       }
     }

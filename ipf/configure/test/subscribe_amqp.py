@@ -49,10 +49,10 @@ def parser():
 
 #######################################################################################################################
 
-if os.path.exists(os.path.join("etc","ipf","xsede","ca_certs.pem")):
-    ca_cert_file = (os.path.join("etc","ipf","xsede","ca_certs.pem"))
-elif os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)),"etc","ipf","xsede","ca_certs.pem")):
-    ca_cert_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),"etc","ipf","xsede","ca_certs.pem")
+if os.path.exists(os.path.join("etc","ipf","ca-certificates","ca_certs.pem")):
+    ca_cert_file = (os.path.join("etc","ipf","ca-certificates","ca_certs.pem"))
+elif os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)),"etc","ipf","ca-certificates","ca_certs.pem")):
+    ca_cert_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),"etc","ipf","ca-certificates","ca_certs.pem")
 
 def connect(options):
     # port 5671 is for SSL, port 5672 is for TCP

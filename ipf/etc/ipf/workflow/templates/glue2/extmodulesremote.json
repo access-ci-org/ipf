@@ -3,7 +3,7 @@
   "steps": [
     { "name": "ipf.sysinfo.ResourceNameStep",
       "params": {
-          "resource_name": "testing.xsede.org"
+          "resource_name": "testing.access-ci.org"
                 }
     },
     { "name": "ipf.glue2.modules.ExtendedModApplicationsStep" },
@@ -15,7 +15,7 @@
       }
     },
     {
-      "description": "Publish extended modules to XSEDE",
+      "description": "Publish extended modules to ACCESS",
       "name": "ipf.publish.AmqpStep",
       "params": {
         "exchange": "glue2.applications",
@@ -23,15 +23,15 @@
                     "ipf.glue2.application.ApplicationsOgfJson"
                 ],
         "services": [
-                    "info1.dyn.xsede.org",
-                    "info2.dyn.xsede.org"
+                    "opspub1.access-ci.org",
+                    "opspub2.access-ci.org"
                 ],
         "ssl_options": {
-                    "ca_certs": "xsede/ca_certs.pem",
+                    "ca_certs": "ca-certificates/ca_certs.pem",
                     "certfile": "/tmp/x509up_u501",
                     "keyfile": "/tmp/x509up_u501"
                 },
-        "vhost": "xsede"
+        "vhost": "infopub"
             }
      }
   ]

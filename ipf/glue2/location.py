@@ -24,6 +24,7 @@ from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.sysinfo import SiteName
 from ipf.step import Step
+from ipf.urnprefix import IPF_URN_PREFIX
 
 from .entity import *
 
@@ -73,7 +74,7 @@ class Location(Entity):
             self.CreationTime = datetime.datetime.now(tzoffset(0))
         self.Validity = doc.get("Validity",Location.DEFAULT_VALIDITY)
         self.Name = doc.get("Name","unknown")
-        self.ID = "urn:ogf:glue2:xsede.org:Location:%s" % self.Name.replace(" ","")
+        self.ID = IPF_URN_PREFIX+"Location:%s" % self.Name.replace(" ","")
         self.id = self.ID
         self.OtherInfo = doc.get("OtherInfo",[])
         self.Extension = doc.get("Extension",{})

@@ -25,6 +25,7 @@ import hashlib
 from ipf.dt import localtzoffset
 from ipf.error import StepError
 from ipf.log import LogDirectoryWatcher
+from ipf.urnprefix import IPF_URN_PREFIX
 
 from . import computing_manager
 from . import service
@@ -196,7 +197,7 @@ class AbstractServiceStep(Step):
         if (serv.Endpoint != ''):
             endpointhashobject = hashlib.md5(str(serv.Endpoint).encode('utf-8'))
             endpointhash = "-"+endpointhashobject.hexdigest()
-        serv.ID = "urn:ogf:ogf:glue2:xsede.org:%s:%s-%s%s" % (ServiceType,
+        serv.ID = IPF_URN_PREFIX+"%s:%s-%s%s" % (ServiceType,
                                             serv.Name, self.resource_name, endpointhash)
         serv.ServiceType = ServiceType
         servlist.add(serv)
@@ -274,7 +275,7 @@ class ASOgfJson(Representation):
                 if (serv.Endpoint != ''):
                     endpointhashobject = hashlib.md5(str(serv.Endpoint).encode('utf-8'))
                     endpointhash = "-"+endpointhashobject.hexdigest()
-                endpoint.ID = "urn:ogf:glue2:xsede.org:Endpoint:%s-%s-%s%s" % (
+                endpoint.ID = IPF_URN_PREFIX+"Endpoint:%s-%s-%s%s" % (
                     serv.Version, serv.Name, serv.resource_name, endpointhash)
                 endpoint.ServiceID = serv.ID
                 endpoint.QualityLevel = serv.QualityLevel

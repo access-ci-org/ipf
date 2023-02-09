@@ -19,6 +19,7 @@ import json
 from xml.dom.minidom import getDOMImplementation
 
 from ipf.data import Data, Representation
+from ipf.urnprefix import IPF_URN_PREFIX
 
 from .entity import *
 
@@ -37,7 +38,7 @@ class Service(Entity):
         self.ShareID = []                               # list of string (ID)
         self.ManagerID = []                             # list of string (ID)
         self.ContactID = []                             # list of string (ID)
-        self.LocationID = "urn:ogf:glue2:xsede.org:Location:unknown"  # string (ID)
+        self.LocationID = IPF_URN_PREFIX + "Location:unknown"  # string (ID)
         self.ServiceID = []                             # list of string (ID)
 
 #######################################################################################################################

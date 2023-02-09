@@ -23,6 +23,7 @@ from ipf.error import StepError
 from ipf.step import Step
 from ipf.sysinfo import ResourceName
 from ipf.ipfinfo import IPFInformation, IPFInformationJson, IPFInformationTxt
+from ipf.urnprefix import IPF_URN_PREFIX
 
 from .entity import *
 
@@ -138,7 +139,7 @@ class ApplicationHandle(Entity):
         # string
         self.Value = "unknown"
         # string (ID)
-        self.ApplicationEnvironmentID = "urn:ogf:glue2:xsede.org:ApplicationEnvironment:unknown"
+        self.ApplicationEnvironmentID = IPF_URN_PREFIX+"ApplicationEnvironment:unknown"
 
 #######################################################################################################################
 
@@ -183,9 +184,9 @@ class Applications(Data):
             app_version = env.AppVersion
         env.Name = "%s-%s" % (env.AppName, app_version)
         env.id = "%s.%s.%s" % (app_version, env.AppName, self.resource_name)
-        env.ID = "urn:ogf:glue2:xsede.org:ApplicationEnvironment:%s.%s.%s.%s" % (
+        env.ID = IPF_URN_PREFIX+"ApplicationEnvironment:%s.%s.%s.%s" % (
             app_version, env.AppName, self.resource_name, env.path_hash)
-        env.ComputingManagerID = "urn:ogf:glue2:xsede.org:ComputingManager:%s" % (
+        env.ComputingManagerID = IPF_URN_PREFIX+"ComputingManager:%s" % (
             self.resource_name)
 
         env.ApplicationHandleID = []
@@ -194,7 +195,7 @@ class Applications(Data):
             handle.Name = "%s-%s" % (env.AppName, app_version)
             handle.id = "%s.%s.%s.%s" % (
                 handle.Type, app_version, env.AppName, self.resource_name)
-            handle.ID = "urn:ogf:glue2:xsede.org:ApplicationHandle:%s:%s.%s.%s.%s" % \
+            handle.ID = IPF_URN_PREFIX+"ApplicationHandle:%s:%s.%s.%s.%s" % \
                         (handle.Type, app_version, env.AppName,
                          self.resource_name, env.path_hash)
             env.ApplicationHandleID.append(handle.ID)

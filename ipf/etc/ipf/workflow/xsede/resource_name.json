@@ -1,7 +1,0 @@
-{
-  "name": "test",
-  "period": 120,
-  "steps": [
-    { "name": "ipf.xsede.sysinfo.ResourceNameStep" },
-  ]
-}

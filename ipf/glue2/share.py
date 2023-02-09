@@ -19,6 +19,7 @@ import json
 from xml.dom.minidom import getDOMImplementation
 
 from ipf.data import Data, Representation
+from ipf.urnprefix import IPF_URN_PREFIX
 
 from .entity import *
 
@@ -32,7 +33,7 @@ class Share(Entity):
         self.EndpointID = []                          # list of string (uri)
         self.ResourceID = []                          # list of string (uri)
         self.EnvironmentID = []                          # list of string (uri)
-        self.ServiceID = "urn:ogf:glue2:xsede.org:Service:unknown"  # string (uri)
+        self.ServiceID = IPF_URN_PREFIX+"Service:unknown"  # string (uri)
         self.ActivityID = []                          # list of string (uri)
         self.MappingPolicyID = []                     # list of string (uri)
 

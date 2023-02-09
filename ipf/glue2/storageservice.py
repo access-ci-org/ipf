@@ -24,6 +24,7 @@ import pprint
 from ipf.dt import localtzoffset
 from ipf.error import StepError
 from ipf.log import LogDirectoryWatcher
+from ipf.urnprefix import IPF_URN_PREFIX
 
 from . import computing_manager
 from . import service
@@ -186,7 +187,7 @@ class StorageServiceStep(Step):
                     else:
                         ServiceType = "LoginService"
         serv.resource_name = self.resource_name 
-        serv.ID = "urn:ogf:ogf:glue2:xsede.org:%s:%s-%s" % (ServiceType,serv.Name,self.resource_name)
+        serv.ID = IPF_URN_PREFIX+"%s:%s-%s" % (ServiceType,serv.Name,self.resource_name)
         serv.ServiceType = ServiceType
         servlist.add(serv)
         
@@ -259,7 +260,7 @@ class SSOgfJson(Representation):
                 endpoint.InterfaceName = serv.Type
                 endpoint.InterfaceVersion = serv.Version
                 endpoint.Name = serv.Name
-                endpoint.ID = "urn:ogf:glue2:xsede.org:Endpoint:%s-%s-%s" % (serv.Version, serv.Name, serv.resource_name)
+                endpoint.ID = IPF_URN_PREFIX+"Endpoint:%s-%s-%s" % (serv.Version, serv.Name, serv.resource_name)
                 endpoint.ServiceID = serv.ID
                 endpoint.QualityLevel = serv.QualityLevel
                 serv.EndpointID = endpoint.ID

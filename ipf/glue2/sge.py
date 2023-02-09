@@ -26,6 +26,7 @@ import xml.sax.handler
 from ipf.dt import *
 from ipf.error import StepError
 from ipf.log import LogFileWatcher
+from ipf.urnprefix import IPF_URN_PREFIX
 
 from . import computing_activity
 from . import computing_manager
@@ -597,7 +598,7 @@ class HostsHandler(xml.sax.handler.ContentHandler):
         elif name == "queue":
             queue = attrs.getValue("name")
             self.cur_host.ShareID.append(
-                "urn:ogf:glue2:xsede.org:ComputingShare:%s.%s" % (queue, self.step.resource_name))
+                IPF_URN_PREFIX+"ComputingShare:%s.%s" % (queue, self.step.resource_name))
         elif name == "hostvalue":
             self.hostvalue_name = attrs.getValue("name")
 

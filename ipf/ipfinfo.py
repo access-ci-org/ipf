@@ -25,6 +25,7 @@ from ipf.data import Data, Representation
 from ipf.error import StepError
 from ipf.step import Step
 from ipf.paths import IPF_PARENT_PATH, IPF_ETC_PATH, IPF_WORKFLOW_PATHS, IPF_VAR_PATH
+from ipf.urnprefix import IPF_URN_PREFIX
 from ipf.sysinfo import ResourceName
 
 from .glue2.entity import *
@@ -262,7 +263,7 @@ class IPFInformationStep(Step):
         ipfinfo.workflows = self._getInput(IPFWorkflows)
         ipfinfo.resource_name = self._getInput(SiteName)
         ipfinfo.type = "IPF"
-        ipfinfo.id = "urn:glue2:PublisherInfo:%s" % '-'.join(
+        ipfinfo.id = IPF_URN_PREFIX + "PublisherInfo:%s" % '-'.join(
             [ipfinfo.type, IPFVersionTxt(ipfinfo.ipf_version).get()])
         # self._output(IPFInformation(self._getInput(IPFVersion).ipf_version,
         #                               self._getInput(IPFWorkflows).workflows,
@@ -309,7 +310,7 @@ class IPFInformation(Entity):
         self.Validity = doc.get("Validity", Location.DEFAULT_VALIDITY)
         self.ipf_version = doc.get("ipf_version", "unknown")
         self.type = "IPF"
-        self.ID = "urn:ogf:glue2:xsede.org:PublisherInfo:%s" % str.join(
+        self.ID = IPF_URN_PREFIX + "PublisherInfo:%s" % str.join(
             '-', self.type, self.ipf_version)
         self.id = self.ID
         self.workflows = doc.get("workflows", "unknown")
@@ -361,7 +362,7 @@ class IPFInformationJson(EntityOgfJson):
             doc["Workflows"] = IPFWorkflowsTxt(self.data.workflows).get()
         doc["Type"] = "IPF"
         s = '-'
-        doc["ID"] = "urn:ogf:glue2:xsede.org:PublisherInfo:%s" % s.join(
+        doc["ID"] = IPF_URN_PREFIX + "PublisherInfo:%s" % s.join(
             (doc["Type"], doc["Version"]))
         return doc
 

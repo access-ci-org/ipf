@@ -1,15 +1,15 @@
 
-XSEDE Tests
+Validation Tests
 ===========
 
-This directory contains test programs that can be used as part of XSEDE testing
+This directory contains test programs that can be used as part of validation testing
 
 Setup
 -----
 
 Change to this directory:
 
-    $ cd ipf/ipf/xsede/test
+    $ cd ipf/ipf/configure/test
 
 Download the current GLUE 2.0 JSON schema:
 
@@ -44,5 +44,5 @@ To sanity check the documents, there are three additional tests:
     $ ./validate_activities.py path/to/activities.json
     $ ./validate_modules.py path/to/apps.json
 
-These scripts check the compute and activities documents output by the xsede/glue2/SCHEDULER_compute.json
-workflows and the xsede/glue2/lmod.json or xsede/glue2/modules.json workflow, in that order.
+These scripts check the compute and activities documents output by the glue2/SCHEDULER_compute.json
+workflows and the glue2/lmod.json or glue2/modules.json workflow, in that order.

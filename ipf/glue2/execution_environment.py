@@ -30,6 +30,7 @@ from ipf.dt import *
 from ipf.error import StepError
 from ipf.sysinfo import ResourceName
 from ipf.sysinfo import Platform
+from ipf.urnprefix import IPF_URN_PREFIX
 
 from .resource import *
 from .step import GlueStep
@@ -61,15 +62,15 @@ class ExecutionEnvironmentsStep(GlueStep):
         host_groups = self._run()
         for host_group in host_groups:
             host_group.id = "%s.%s" % (host_group.Name, self.resource_name)
-            host_group.ID = "urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s.%s" % (
+            host_group.ID = IPF_URN_PREFIX+"ExecutionEnvironment:%s.%s" % (
                 host_group.Name, self.resource_name)
-            host_group.ManagerID = "urn:ogf:glue2:xsede.org:ComputingManager:%s" % (
+            host_group.ManagerID = IPF_URN_PREFIX+"ComputingManager:%s" % (
                 self.resource_name)
         #accel_groups = copy.deepcopy(host_groups)
         # for accel_group in accel_groups:
         #    accel_group.id = "%s.%s" % (host_group.Name,self.resource_name)
-        #    accel_group.ID = "urn:ogf:glue2:xsede.org:AcceleratorEnvironment:%s.%s" % (accel_group.Name,self.resource_name)
-        #    accel_group.ManagerID = "urn:ogf:glue2:xsede.org:ComputingManager:%s" % (self.resource_name)
+        #    accel_group.ID = IPF_URN_PREFIX+"AcceleratorEnvironment:%s.%s" % (accel_group.Name,self.resource_name)
+        #    accel_group.ManagerID = IPF_URN_PREFIX+"ComputingManager:%s" % (self.resource_name)
 
         self._output(ExecutionEnvironments(self.resource_name, host_groups))
         # self._output(AcceleratorEnvironments(self.resource_name,accel_groups))
@@ -142,7 +143,7 @@ class ExecutionEnvironmentsStep(GlueStep):
         if len(host.ShareID) == 0:
             return True
         for share in host.ShareID:
-            m = re.search("urn:ogf:glue2:xsede.org:ComputingShare:(\S+).%s" %
+            m = re.search(IPF_URN_PREFIX+"ComputingShare:(\S+).%s" %
                           self.resource_name, share)
             if self._includeQueue(m.group(1)):
                 return True

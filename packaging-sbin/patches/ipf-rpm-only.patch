@@ -12,10 +12,10 @@ index fe2a550..757920a 100644
 
  if "IPF_ETC_PATH" in os.environ:
      IPF_ETC_PATH = os.environ["IPF_ETC_PATH"]
-diff --git a/ipf/xsede/configure_workflows.py b/ipf/xsede/configure_workflows.py
+diff --git a/ipf/configure/configure_workflows.py b/ipf/configure/configure_workflows.py
 index 1cf6412..f518ba0 100644
---- a/ipf/xsede/configure_workflows.py
-+++ b/ipf/xsede/configure_workflows.py
+--- a/ipf/configure/configure_workflows.py
++++ b/ipf/configure/configure_workflows.py
 @@ -742,8 +742,8 @@
                  out_file.write("WORKFLOW=${NAME}.json\n")
              else:

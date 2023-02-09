@@ -21,6 +21,7 @@ from xml.dom.minidom import getDOMImplementation
 from ipf.data import Data, Representation
 
 from .entity import *
+from ipf.urnprefix import IPF_URN_PREFIX
 
 #######################################################################################################################
 
@@ -28,7 +29,7 @@ class Resource(Entity):
     def __init__(self):
         Entity.__init__(self)
 
-        self.ManagerID = "urn:ogf:glue2:xsede.org:ComputingManager:unknown"  # string (uri)
+        self.ManagerID = IPF_URN_PREFIX+"ComputingManager:unknown"  # string (uri)
         self.ShareID = []                             # list of string (uri)
         self.ActivityID = []                          # list of string (uri)
 

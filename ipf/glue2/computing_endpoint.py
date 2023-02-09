@@ -28,6 +28,7 @@ from ipf.sysinfo import ResourceName
 
 from ipf.glue2.endpoint import *
 from ipf.glue2.step import GlueStep
+from ipf.urnprefix import IPF_URN_PREFIX
 
 #######################################################################################################################
 
@@ -52,8 +53,8 @@ class ComputingEndpointStep(GlueStep):
                 endpoints[i].Name = "endpoint-%d" % (i+1)
         for endpoint in endpoints:
             endpoint.id = "%s.%s" % (endpoint.Name,self.resource_name)
-            endpoint.ID = "urn:ogf:glue2:xsede.org:ComputingEndpoint:%s.%s" % (endpoint.Name,self.resource_name)
-            endpoint.ServiceID = "urn:ogf:glue2:xsede.org:ComputingService:%s" % (self.resource_name)
+            endpoint.ID = IPF_URN_PREFIX+"ComputingEndpoint:%s.%s" % (endpoint.Name,self.resource_name)
+            endpoint.ServiceID = IPF_URN_PREFIX+"ComputingService:%s" % (self.resource_name)
 
             self._output(endpoint)
 

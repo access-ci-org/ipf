@@ -21,6 +21,7 @@ from xml.dom.minidom import getDOMImplementation
 
 from ipf.data import Data, Representation
 from ipf.dt import *
+from ipf.urnprefix import IPF_URN_PREFIX
 
 #######################################################################################################################
 
@@ -30,7 +31,7 @@ class Entity(Data):
 
         self.CreationTime = datetime.datetime.now(tzoffset(0))
         self.Validity = None
-        self.ID = "urn:ogf:glue2:xsede.org:Unknown:unknown"   # string (uri)
+        self.ID = IPF_URN_PREFIX+"Unknown:unknown"   # string (uri)
         self.Name = None                        # string
         self.OtherInfo = []                     # list of string
         self.Extension = {}                     # (key,value) strings

@@ -24,6 +24,7 @@ from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.error import NoMoreInputsError,StepError
 from ipf.sysinfo import ResourceName
+from ipf.urnprefix import IPF_URN_PREFIX
 
 from .computing_activity import ComputingActivity, ComputingActivities
 from .computing_share import ComputingShares
@@ -57,9 +58,9 @@ class ComputingServiceStep(GlueStep):
         service = self._run()
 
         service.id = self.resource_name
-        service.ID = "urn:ogf:glue2:xsede.org:ComputingService:%s" % (self.resource_name)
+        service.ID = IPF_URN_PREFIX+"ComputingService:%s" % (self.resource_name)
         service.LocationID = self.location
-        service.ManagerID = ["urn:ogf:glue2:xsede.org:ComputingManager:%s" % (self.resource_name)]
+        service.ManagerID = [IPF_URN_PREFIX+"ComputingManager:%s" % (self.resource_name)]
 
 
         service._addActivities(self.activities)

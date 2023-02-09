@@ -5,7 +5,7 @@ REL=$(cat RELEASE)
 
 # add this later: ipf-xsede-teragrid-kitssoftware
 #for i in ipf-xsede-glue2 ipf-xsede mtk
-for i in ipf-xsede
+for i in ipf
 do
   ./sbin/upload $i
   ./sbin/rpmupload $i

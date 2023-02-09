@@ -23,6 +23,7 @@ from xml.dom.minidom import getDOMImplementation
 from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.sysinfo import ResourceName
+from ipf.urnprefix import IPF_URN_PREFIX
 
 from .computing_share import ComputingShares
 #from .computing_manager import ComputingManager
@@ -58,11 +59,11 @@ class ComputingManagerAcceleratorInfoStep(GlueStep):
         #self.shares = self._getInput(ComputingShares).shares
 
         manager_accel_info = self._run()
-        manager_accel_info.ComputingManagerID = "urn:ogf:glue2:xsede.org:ComputingManager:%s" % (
+        manager_accel_info.ComputingManagerID = IPF_URN_PREFIX+"ComputingManager:%s" % (
             self.resource_name)
 
         manager_accel_info.id = "%s" % (self.resource_name)
-        manager_accel_info.ID = "urn:ogf:glue2:xsede.org:ComputingManagerAcceleratorInfo:%s" % (
+        manager_accel_info.ID = IPF_URN_PREFIX+"ComputingManagerAcceleratorInfo:%s" % (
             self.resource_name)
 
         if self.accel_envs:

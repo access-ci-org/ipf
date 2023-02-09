@@ -139,7 +139,7 @@ class InstalledServiceStep(computing_service.ComputingServiceStep):
 #######################################################################################################################
 
 
-class ComputingServiceXsedeJson(ServiceOgfJson):
+class ComputingServiceInstalledJson(ServiceOgfJson):
     data_cls = ComputingService
 
     def __init__(self, data):

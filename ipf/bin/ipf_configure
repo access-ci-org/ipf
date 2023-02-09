@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# this script does about the same things as the ipf_configure_xsede script generated during a rpm or pip install
+# this script does about the same things as the ipf_configure script generated during a rpm or pip install
 
 PYTHON=python
 
@@ -10,4 +10,4 @@ PACKAGE_PATH=`dirname $BIN_PATH`
 IPF_PATH=`dirname $PACKAGE_PATH`
 export PYTHONPATH=$IPF_PATH
 
-$PYTHON $IPF_PATH/ipf/xsede/configure_workflows.py $@
+$PYTHON $IPF_PATH/ipf/configure/configure_workflows.py $@

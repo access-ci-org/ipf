@@ -58,14 +58,14 @@ def parseargs():
                         help='comma delimited key:value pairs for parameters for your scheduler')
     parser.add_argument('--amqp_username', \
                         #action='store_const',const='username', dest='mode',\
-                        help='Username for publishing to XSEDE AMQP. Not needed if using certificate')
+                        help='Username for publishing to AMQP. Not needed if using certificate')
     parser.add_argument('--amqp_certificate', \
                         #action='store_const',const='certificate', dest='mode',\
-                        help='Location of certificate for publishing to XSEDE AMQP. Not needed if using username')
+                        help='Location of certificate for publishing to AMQP. Not needed if using username')
     parser.add_argument('--amqp_password', \
-                        help='Password for publishing to XSEDE AMQP. Not needed if using certificate')
+                        help='Password for publishing to AMQP. Not needed if using certificate')
     parser.add_argument('--amqp_certificate_key', \
-                        help='Location of certificate key for publishing to XSEDE AMQP. Not needed if using username')
+                        help='Location of certificate key for publishing to AMQP. Not needed if using username')
     parser.add_argument('--modulepath', \
                         help='MODULEPATH for software publishing workflow')
     parser.add_argument('--servicepath', \
@@ -74,8 +74,8 @@ def parseargs():
                         help='Comma delimited list of workflows to configure')
     parser.add_argument('--workflowtemplate', \
                         help='Path to configured workflow to use as template for new workflow')
-    parser.add_argument('--publish_to_xsede', action='store_true', \
-                        help='Configure the services to publish to XSEDE')
+    parser.add_argument('--publish', action='store_true', \
+                        help='Configure the services to publish to ACCESS-CI')
     parser.add_argument('--compute_interval', \
                         help='Interval in seconds for the compute workflow to wait before rerunning')
     parser.add_argument('--modules', \
@@ -148,8 +148,8 @@ def configure_compute_workflow(resource_name,args,template_json):
     setResourceName(resource_name, compute_json)
     setLocation(compute_json,args,template_json)
     updateFilePublishPaths(resource_name, compute_json)
-    if (args.publish_to_xsede):
-        addXsedeAmqpToWorkflow("compute",compute_json, template_json, args)
+    if (args.publish):
+        addAccessAmqpToWorkflow("compute",compute_json, template_json, args)
     writeComputeWorkflow(resource_name, compute_json)
     writePeriodicComputeWorkflow(resource_name,args)
 
@@ -167,8 +167,8 @@ def configure_activity_workflow(resource_name,args,template_json):
     setResourceName(resource_name, activity_json)
     updateActivityLogFile(resource_name, activity_json, args)
     updateFilePublishPaths(resource_name, activity_json)
-    if (args.publish_to_xsede):
-        addXsedeAmqpToWorkflow("activity",activity_json, template_json, args)
+    if (args.publish):
+        addAccessAmqpToWorkflow("activity",activity_json, template_json, args)
     writeActivityWorkflow(resource_name, activity_json)
 
     module_names = getModules(args)
@@ -181,8 +181,8 @@ def configure_extmodules_workflow(resource_name,args,template_json):
     setSupportContact(extmodules_json,args)
     setResourceName(resource_name, extmodules_json)
     updateFilePublishPaths(resource_name, extmodules_json)
-    if (args.publish_to_xsede):
-        addXsedeAmqpToWorkflow("extmodules",extmodules_json, template_json, args)
+    if (args.publish):
+        addAccessAmqpToWorkflow("extmodules",extmodules_json, template_json, args)
     writeExtModulesWorkflow(resource_name, extmodules_json)
     writePeriodicExtModulesWorkflow(resource_name,args)
 
@@ -194,8 +194,8 @@ def configure_services_workflow(resource_name,args,template_json):
     services_json = getAbstractServicesJson(template_json)
     setResourceName(resource_name, services_json)
     updateFilePublishPaths(resource_name, services_json)
-    if (args.publish_to_xsede):
-        addXsedeAmqpToWorkflow("services",services_json, template_json, args)
+    if (args.publish):
+        addAccessAmqpToWorkflow("services",services_json, template_json, args)
     writeAbstractServicesWorkflow(resource_name, services_json)
     writePeriodicAbstractServicesWorkflow(resource_name,args)
 
@@ -207,8 +207,8 @@ def configure_services_workflow(resource_name,args,template_json):
 
 def configure_ipfinfo_workflow(resource_name,args,template_json):
     ipfinfo_json = getIPFInfoJson(template_json)
-    if (args.publish_to_xsede):
-        addXsedeAmqpToWorkflow("ipfinfo",ipfinfo_json, template_json, args)
+    if (args.publish):
+        addAccessAmqpToWorkflow("ipfinfo",ipfinfo_json, template_json, args)
     writeIPFInfoWorkflow(ipfinfo_json)
 
     module_names = getModules(args)
@@ -224,7 +224,7 @@ def getResourceName(template_json):
                     resource_name = step_json["params"]["resource_name"]
             return resource_name
     else:
-        print('\nNo XSEDE resource name specified.  You must do one of:\n     * make sure xdresourceid is in your path\n     *use the command line option "--resource_name <name>"\n     *specify a template file that defines the resource name, using --workflowtemplate <file.json>')
+        print('\nNo resource name specified.  You must do one of:\n     * make sure xdresourceid is in your path\n     *use the command line option "--resource_name <name>"\n     *specify a template file that defines the resource name, using --workflowtemplate <file.json>')
         raise SystemExit
     return
 
@@ -389,29 +389,29 @@ def updateFilePublishPaths(resource_name, workflow_json):
             step_json["params"]["path"] = res_name + \
                 "_" + step_json["params"]["path"]
 
-def addXsedeAmqpToWorkflow(workflow_name,workflow_json, template_json, args):
-    if not args.publish_to_xsede:
+def addAccessAmqpToWorkflow(workflow_name,workflow_json, template_json, args):
+    if not args.publish:
         return False
     if workflow_name == "compute":
         publish_step = "ipf.glue2.compute.PublicOgfJson"
         exchange = "glue2.compute"
-        description = "Publish compute resource description to XSEDE"
+        description = "Publish compute resource description to ACCESS-CI"
     elif workflow_name == "activity":
         publish_step = "ipf.glue2.computing_activity.ComputingActivityOgfJson"
         exchange = "glue2.computing_activity"
-        description = "Publish job updates to XSEDE"
+        description = "Publish job updates to ACCESS-CI"
     elif workflow_name == "extmodules":
         publish_step = "ipf.glue2.application.ApplicationsOgfJson"
         exchange = "glue2.applications"
-        description = "Publish modules to XSEDE"
+        description = "Publish modules to ACCESS-CI"
     elif workflow_name == "services":
         publish_step = "ipf.glue2.abstractservice.ASOgfJson"
         exchange = "glue2.compute"
-        description = "Publish Services to XSEDE"
+        description = "Publish Services to ACCESS-CI"
     elif workflow_name == "ipfinfo":
         publish_step = "ipf.ipfinfo.IPFInformationJson"
         exchange = "glue2.compute"
-        description = "Publish IPFInfo to XSEDE"
+        description = "Publish IPFInfo to ACCESS-CI"
     if args.amqp_certificate:
         cert_path = args.amqp_certificate
         if not testReadFile(cert_path):
@@ -435,8 +435,8 @@ def addXsedeAmqpToWorkflow(workflow_name,workflow_json, template_json, args):
             #Template is not for workflow--copy section in
             for step in template_json["steps"]:
                 #compute workflow has two publish steps, copy both
-                if step["name"] == "ipf.publish.AmqpStep" and "xsede.org" in step["params"]["services"][0]:
-                    if workflow_name == "compute" and step["description"] == "Publish description of current jobs to XSEDE":
+                if step["name"] == "ipf.publish.AmqpStep" and "access-ci.org" in step["params"]["services"][0]:
+                    if workflow_name == "compute" and step["description"] == "Publish description of current jobs to ACCESS-CI":
                         publish_description = step["description"]
                     else:
                         publish_description = description
@@ -458,11 +458,11 @@ def addXsedeAmqpToWorkflow(workflow_name,workflow_json, template_json, args):
     amqp_step["params"] = {}
     amqp_step["params"]["publish"] = [publish_step]
     amqp_step["params"]["services"] = [
-        "infopub.xsede.org", "infopub-alt.xsede.org"]
-    amqp_step["params"]["vhost"] = "xsede"
+        "opspub1.access-ci.org", "opspub2.access-ci.org"]
+    amqp_step["params"]["vhost"] = "infopub"
     amqp_step["params"]["exchange"] = exchange
     amqp_step["params"]["ssl_options"] = {}
-    amqp_step["params"]["ssl_options"]["ca_certs"] = "xsede/ca_certs.pem"
+    amqp_step["params"]["ssl_options"]["ca_certs"] = "ca-certificates/ca_certs.pem"
     if cert_path is not None:
         amqp_step["params"]["ssl_options"]["certfile"] = cert_path
         amqp_step["params"]["ssl_options"]["keyfile"] = key_path
@@ -473,7 +473,7 @@ def addXsedeAmqpToWorkflow(workflow_name,workflow_json, template_json, args):
     
     if workflow_name == "compute":
         amqp_step = copy.deepcopy(amqp_step)
-        amqp_step["description"] = "Publish description of current jobs to XSEDE"
+        amqp_step["description"] = "Publish description of current jobs to ACCESS-CI"
         amqp_step["params"]["publish"] = ["ipf.glue2.compute.PrivateOgfJson"]
         amqp_step["params"]["exchange"] = "glue2.computing_activities"
         workflow_json["steps"].append(amqp_step)

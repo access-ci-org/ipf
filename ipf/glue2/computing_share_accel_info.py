@@ -23,6 +23,7 @@ from xml.dom.minidom import getDOMImplementation
 from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.sysinfo import ResourceName
+from ipf.urnprefix import IPF_URN_PREFIX
 
 from .computing_share import ComputingShares
 #from .computing_manager import ComputingManager
@@ -54,16 +55,16 @@ class ComputingShareAcceleratorInfoStep(GlueStep):
         self.accel_envs = self._getInput(AcceleratorEnvironments).accel_envs
         #self.manager = self._getInput(ComputingManager).manager
         self.shares = self._getInput(ComputingShares).shares
-        self.ComputingManagerID = "urn:ogf:glue2:xsede.org:ComputingManager:%s" % (self.resource_name)
+        self.ComputingManagerID = IPF_URN_PREFIX+"ComputingManager:%s" % (self.resource_name)
         #self.UsedAcceleratorSlots = None         # integer
         accel_shares = []
 
         for computing_share in self.shares:
             share_accel_info = self._run()
             share_accel_info.id = "%s" % (self.resource_name)
-            share_accel_info.ID = "urn:ogf:glue2:xsede.org:ComputingShareAcceleratorInfo:%s.%s" % (computing_share.Name,self.resource_name)
+            share_accel_info.ID = IPF_URN_PREFIX+"ComputingShareAcceleratorInfo:%s.%s" % (computing_share.Name,self.resource_name)
             share_accel_info.Name = computing_share.Name
-            #share_accel_info.ID = "urn:ogf:glue2:xsede.org:ComputingShareAcceleratorInfo:%s" % (self.resource_name)
+            #share_accel_info.ID = IPF_URN_PREFIX+"ComputingShareAcceleratorInfo:%s" % (self.resource_name)
             share_accel_info.ComputingShareID.append(computing_share.ID)
             share_accel_info._addComputingShare(computing_share)
             computing_share.ComputingShareAccelInfoID=share_accel_info.ID

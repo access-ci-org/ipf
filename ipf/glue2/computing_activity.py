@@ -25,6 +25,7 @@ from ipf.dt import *
 from ipf.error import StepError
 from ipf.paths import IPF_VAR_PATH
 from ipf.sysinfo import ResourceName
+from ipf.urnprefix import IPF_URN_PREFIX
 
 from .activity import *
 from .step import GlueStep
@@ -57,9 +58,9 @@ class ComputingActivitiesStep(GlueStep):
                 activity.id = "%s.unknown.%s" % (activity.LocalIDFromManager,self.resource_name)
             else:
                 activity.id = "%s.%s.%s" % (activity.LocalIDFromManager,activity.LocalOwner,self.resource_name)
-            activity.ID = "urn:ogf:glue2:xsede.org:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
+            activity.ID = IPF_URN_PREFIX+"ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
             if activity.Queue is not None:
-                activity.ShareID = "urn:ogf:glue2:xsede.org:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
+                activity.ShareID = IPF_URN_PREFIX+"ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
             activity.hide = self.params.get("hide_job_attribs",[])
 
         self._output(ComputingActivities(self.resource_name,activities))
@@ -131,9 +132,9 @@ class ComputingActivityUpdateStep(GlueStep):
             activity.id = "%s.unknown.%s" % (activity.LocalIDFromManager,self.resource_name)
         else:
             activity.id = "%s.%s.%s" % (activity.LocalIDFromManager,activity.LocalOwner,self.resource_name)
-        activity.ID = "urn:ogf:glue2:xsede.org:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
+        activity.ID = IPF_URN_PREFIX+"ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
         if activity.Queue is not None:
-            activity.ShareID = "urn:ogf:glue2:xsede.org:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
+            activity.ShareID = IPF_URN_PREFIX+"ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
         activity.hide = self.params.get("hide_job_attribs",[])
         
         self._output(activity)
