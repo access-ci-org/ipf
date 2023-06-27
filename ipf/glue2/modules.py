@@ -409,13 +409,13 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                 sanitize = re.sub(r'\\\s+', ' ', m.group(2))
                 modvars[m.group(1)] = sanitize
                 # print(m.group(1)+"="+sanitize)
-    #print("modvars keys, %s",modvars.keys())
-        for line in text:
-            m = re.search("puts stderr \"([^\"]+)\"", line)
-            if m is not None:
-                if description != "":
-                    description += " "
-                description += m.group(1)
+        desc_match = re.findall("puts stderr \"([^\"]+)\"", text)
+        for line in desc_match:
+            # self.debug("line is "+line)
+            if description != "":
+                description += " "
+            description += line
+        # self.debug("Description is "+description)
         if description != "":
             for modvar in list(modvars.keys()):
                 if modvar in description:
