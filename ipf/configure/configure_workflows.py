@@ -458,7 +458,7 @@ def addAccessAmqpToWorkflow(workflow_name,workflow_json, template_json, args):
     amqp_step["params"] = {}
     amqp_step["params"]["publish"] = [publish_step]
     amqp_step["params"]["services"] = [
-        "opspub1.access-ci.org", "opspub2.access-ci.org"]
+        "opspub.access-ci.org", "opspub-alt.access-ci.org"]
     amqp_step["params"]["vhost"] = "infopub"
     amqp_step["params"]["exchange"] = exchange
     amqp_step["params"]["ssl_options"] = {}
