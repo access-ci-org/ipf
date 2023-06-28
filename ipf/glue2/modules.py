@@ -330,70 +330,58 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
             version = version[:len(version)-4]
         env.AppVersion = version
 
-        # Allow key: value Name to override filename value
-        m = re.search("\"Name:([^\"]+)\"", text)
-        if m is not None:
-            name = m.group(1).strip()
-            env.SpecifiedName = name
-        else:
-            self.debug("no Name in "+path)
+        #Search both whatis([[]]) and general comments for these keywords
+        #This regex strategy inspired by https://stackoverflow.com/a/33411504
+        words = ['Name', 'Version', '.*escription', 'URL', 'Category', 'Keywords', 'SupportStatus', 'SupportContact', 'Default', 'IPF_FLAGS']
+        longest_first = sorted(words, key=len, reverse=True)
+        whatis_re = re.compile(r'whatis\(\[\[((?:{}))\s*:\s*(.*)\]\]\)'.format('|'.join(longest_first)))
+        comment_re = re.compile(r'\"((?:{})):([^\"]+)\"'.format('|'.join(longest_first)))
+        whatis_res = whatis_re.findall(text)
+        comment_res = comment_re.findall(text)
 
-        m = re.search("\"Description:([^\"]+)\"", text)
-        if m is not None:
-            env.Description = m.group(1).strip()
-        else:
-            self.debug("no description in "+path)
+        #Now we go through the combined list of tuples and add them to the
+        #appropriate env.  Comments override whatis.
+        for k,v in whatis_res+comment_res:
+            if k == "Name":
+                env.SpecifiedName = v
+                #We're going to try overriding AppName as well, as spack/lmod
+                #don't follow the same filenaming convention, so AppName is 
+                #meaningless there
+                env.AppName = v
+            elif k == "Version":
+                env.AppVersion = v
+            elif "escription" in k:
+                env.Description = v
+            elif k == "URL":
+                env.Repository = v
+            elif k == "Category":
+                env.Extension['Category'] = list(map(str.strip, v.split(',')))
+            elif k == "Keywords":
+                env.Keywords = list(map(str.strip, v.split(',')))
+            elif k == "SupportStatus":
+                # Is support status supposed to be a list?
+                # supportstatus = []
+                # supportstatus.append(list(map(str.strip, v.split(","))))
+                env.Extension['SupportStatus'] = v
+            elif k == "SupportContact":
+                env.Extension['SupportContact'] = v
+            elif k == "Default":
+                env.Extension['Default'] = v
+            elif k == "IPF_FLAGS":
+                #Currently only supporting NOPUBLISH
+                flagslist = list(
+                    map(str.strip, v.split(",")))
+                if "NOPUBLISH" in flagslist:
+                    publishflag = False
+                    self.debug("NOPUBLISH set")
+        if env.Description is None:
             env.Description = self._InferDescription(text, env)
-            #print("no description in "+path)
-        m = re.search("\"URL:([^\"]+)\"", text)
-        if m is not None:
-            env.Repository = m.group(1).strip()
-        else:
-            self.debug("no URL in "+path)
-        m = re.search("\"Category:([^\"]+)\"", text)
-        if m is not None:
-            env.Extension["Category"] = list(
-                map(str.strip, m.group(1).split(",")))
-
-        else:
-            self.debug("no Category in "+path)
-        m = re.search("\"Keywords:([^\"]+)\"", text)
-        if m is not None:
-            env.Keywords = list(map(str.strip, m.group(1).split(",")))
-        else:
-            self.debug("no Keywords in "+path)
-        m = re.search("\"SupportStatus:([^\"]+)\"", text)
-        if m is not None:
-            supportstatus = []
-            supportstatus.append(list(map(str.strip, m.group(1).split(","))))
-            env.Extension["SupportStatus"] = m.group(1).strip()
-        else:
-            self.debug("no SupportStatus in "+path)
-
-        m = re.search("\"SupportContact:([^\"]+)\"", text)
-        if m is not None:
-            supportcontact = m.group(1).strip()
-            env.Extension["SupportContact"] = m.group(1).strip()
-        else:
-            self.debug("no SupportContact in "+path)
+        if "SupportContact" not in env.Extension:
+            self.debug("no SupportContact")
             if self.support_contact:
                 env.Extension["SupportContact"] = self.support_contact
 
-        m = re.search("\"Default:([^\"]+)\"", text)
-        if m is not None:
-            default = []
-            default.append(list(map(str.strip, m.group(1).split(","))))
-            env.Extension["Default"] = m.group(1).strip()
-        else:
-            self.debug("no whatis Default: in "+path)
-        m = re.search("\"IPF_FLAGS:([^\"]+)\"", text)
-        if m is not None:
-            #Currently only supporting NOPUBLISH
-            flagslist = list(
-                map(str.strip, m.group(1).split(",")))
-            if "NOPUBLISH" in flagslist:
-                publishflag = False
-                self.debug("NOPUBLISH set for "+path)
+
 
         handle = application.ApplicationHandle()
         handle.Type = ApplicationHandle.MODULE
@@ -421,13 +409,13 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                 sanitize = re.sub(r'\\\s+', ' ', m.group(2))
                 modvars[m.group(1)] = sanitize
                 # print(m.group(1)+"="+sanitize)
-    #print("modvars keys, %s",modvars.keys())
-        for line in text:
-            m = re.search("puts stderr \"([^\"]+)\"", line)
-            if m is not None:
-                if description != "":
-                    description += " "
-                description += m.group(1)
+        desc_match = re.findall("puts stderr \"([^\"]+)\"", text)
+        for line in desc_match:
+            # self.debug("line is "+line)
+            if description != "":
+                description += " "
+            description += line
+        # self.debug("Description is "+description)
         if description != "":
             for modvar in list(modvars.keys()):
                 if modvar in description:
