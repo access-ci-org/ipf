@@ -170,7 +170,7 @@ Once you have a Python 3.6 environment (whether venv or not), to install execute
 
 When installing via pip: unlike in an RPM install, the files get
 installed relative to your Python installation (whether in a virtualenv
-or system Python). Notably, ipf_configure_xsede and ipf_workflow end
+or system Python). Notably, ipf_configure and ipf_workflow end
 up in the virtualenv's bin directory, and the location IPF expects to
 find as its IPF_ETC_PATH (/etc/ipf in an RPM install) is relative to
 the Python site-packages directory.
@@ -188,7 +188,7 @@ site-packages directory referenced above, plus "/etc/ipf". For a system
 Python, this might look something like
 "/usr/lib/python3.6/site-packages/etc/ipf". 
 
-If you have run ipf_configure_xsede to set up your workflows, and chosen the
+If you have run ipf_configure to set up your workflows, and chosen the
 recommended base directory, your workflow definitions will have the
 appropriate IPF_ETC_PATH defined in them.
 
@@ -209,10 +209,10 @@ For a development/testing version use
     [Development Repo Trust Instructions](https://software.xsede.org/development/repo/repoconfig.txt).
 
 
-2)  Install ipf-xsede
+2)  Install ipf
 
 
-    $ yum install ipf-xsede
+    $ yum install ipf
 
 
 
@@ -222,17 +222,16 @@ For a development/testing version use
 
 
 The JSON files that have been written by previous runs of
-ipf_configure_xsede would, in some previous versions of IPF get
-overwritten by subsequent runs of ipf_configure_xsede. This is no
+ipf_configure would, in some previous versions of IPF get
+overwritten by subsequent runs of ipf_configure. This is no
 longer the case--previous versions get backed up, not overwritten. They
 will *not* be erased by removing OR updating the package (nor will the
 service files copied to /etc/init.d be erased).
 
 
-To perform the update to the latest RPM distribution of ipf-xsede:
+To perform the update to the latest RPM distribution of ipf:
 
-
-1.  $ sudo yum update ipf-xsede
+1.  $ sudo yum update ipf
 2.  If there are new workflows you need to configure, follow the
     configuration steps as outlined in the Configuration section below.
 
@@ -241,7 +240,7 @@ To perform the update to the latest RPM distribution of ipf-xsede:
 ---------------
 
 
-To make configuration easier, an `ipf_configure_xsede` script is
+To make configuration easier, an `ipf_configure` script is
 provided in the bin directory (in /usr/bin if you installed RPMs,
 otherwise in $INSTALL_DIR/ipf-VERSION/ipf/bin). This script will 
 generate workflow definition files and example init files. 
@@ -250,18 +249,18 @@ generate workflow definition files and example init files.
 If you intend to publish software module information via the extmodules 
 workflow, set the environment variable MODULEPATH
 to point to the location of the module files before running
-ipf_configure_xsede. If you intend to publish the service workflow
+ipf_configure. If you intend to publish the service workflow
 set SERVICEPATH to point to the location of the service definition files
-before running ipf_configure_xsede (more on this below).
-As of IPF v 1.7, ipf_configure_xsede accepts command line parameters
+before running ipf_configure (more on this below).
+As of IPF v 1.7, ipf_configure accepts command line parameters
 to tell it which workflows to configure, and with which options.
 
 
-An invocation of ipf_configure_xsede on a resource that has installed 
+An invocation of ipf_configure on a resource that has installed 
 IPF using RPM might look like:
 
 
-/usr/bin/ipf_configure_xsede --rpm --resource_name <RESOURCE_NAME> --workflows=extmodules,compute,activity --publish_to_xsede --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  --modulepath /path/to/modules --scheduler slurm --slurmctl_log <PATH TO slurmctl.log> 
+/usr/bin/ipf_configure --rpm --resource_name <RESOURCE_NAME> --workflows=extmodules,compute,activity --publish_to_xsede --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  --modulepath /path/to/modules --scheduler slurm --slurmctl_log <PATH TO slurmctl.log> 
 
 
 These options mean:
@@ -274,7 +273,7 @@ These options mean:
                                    and returns the desired name 
 --workflows           Comma delimited list of workflows to configure.  Values can include:
                              compute, activity, extmodules, services
---publish_to_xsede        Necessary if you wish to configure your workflow to publish to ACCESS's
+--publish        Necessary if you wish to configure your workflow to publish to ACCESS's
                                       AMQP service for inclusion in Information Services
 
 
@@ -311,10 +310,10 @@ Other common options:
 For a full list of command line options, please try
 
 
-$ ipf_configure_xsede ----help
+$ ipf_configure ----help
 
 
--   `ipf_configure_xsede` should be run as the user that will run the
+-   `ipf_configure` should be run as the user that will run the
     information gathering workflows
 
 
@@ -332,7 +331,7 @@ $ ipf_configure_xsede ----help
     username and password, state that and someone will contact you.
 
 
-Note: The xdinfo user as created by the ipf-xsede rpm installation has
+Note: The xdinfo user as created by the ipf rpm installation has
 /bin/nologin set as its shell by default. This is because for most
 purposes, the xdinfo user doesn't need an interactive shell. However,
 for some of the initial setup, it is easiest to use the xdinfo user with
@@ -349,7 +348,7 @@ configuration steps are run after something like the following:
 Execute:
 
 
-    $ ipf_configure_xsede \<command line options shown above\>
+    $ ipf_configure \<command line options shown above\>
 
 
 If you encounter any errors or the script does not cover your situation,
@@ -435,7 +434,7 @@ You can check the setting on your Torque installation by using "qmgr".
 
 
 The SLURM logs must be in a directory that is local to and accessible to
-the IPF installation. `ipf_configure_xsede` allows one to set this
+the IPF installation. `ipf_configure` allows one to set this
 location for the workflow.
 
 
@@ -490,7 +489,7 @@ Sample Service publishing file:
 
     Name = org.openssh
     Version = 8.x
-    Endpoint = delta.ncsa.xsede.org 
+    Endpoint = delta.ncsa.access-ci.org 
     Capability = login.shell.local-password-mfa
     Capability = login.shell.pubkey
     SupportStatus = production
@@ -564,7 +563,7 @@ To register a new support contact submit a ticket to ACCESS Operations with the
 Subject: Please register a new Support Contact Organization.
 
 
-`ipf_configure_xsede` offers the opportunity to define a default SupportContact that is published for every module
+`ipf_configure` offers the opportunity to define a default SupportContact that is published for every module
 that does not define its own. By default, this value is:
 `https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/helpdesk.xsede.org/`
 
@@ -832,7 +831,7 @@ glue2/openstack_compute.json glue2/catalina_pbs_compute.json
 
 
 These workflow templates are automatically used in workflow
-configuration via the ipf_configure_xsede script.
+configuration via the ipf_configure script.
 
 
 ### Post-configuration workflow files
@@ -853,7 +852,7 @@ by init scripts described below.
 ---------------------
 
 
-The ipf_configure_xsede script generates an init script for each
+The ipf_configure script generates an init script for each
 workflow you configure, and puts them in $IPF_ETC_PATH/init.d/ Each script
 runs one workflow, on a periodic basis (using the periodic workflows
 described above). It is important to note that the scripts in
