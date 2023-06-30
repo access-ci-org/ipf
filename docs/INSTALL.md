@@ -270,7 +270,7 @@ These options mean:
 
 
 --resource_name        The name of your resource.   To find your resource name, 
-            go to "https://operations1.access-ci.org/resources/access-allocated"
+            go to "https://operations.access-ci.org/resources/access-allocated"
             to find your resource, and use the "Global Resource ID" value, but
             substitute "access-ci.org" for "xsede.org"
 
@@ -321,7 +321,7 @@ $ ipf_configure ----help
 
 -    You must always specify --resource_name, and you should use the 
      "Global Resource ID" from 
-     https://operations1.access-ci.org/resources/access-allocated except 
+     https://operations.access-ci.org/resources/access-allocated except 
      with "access-ci.org" instead of "xsede.org"
 
 
