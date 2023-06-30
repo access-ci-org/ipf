@@ -28,7 +28,7 @@ cp  VERSION$PKG $OUTDIR/VERSION
 
 mkdir $OUTDIR/docs
 cd ..
-FILES=$(find ./docs -type f ! -path \*\.svn\*)
+FILES=$(find ./docs -type f ! -path \*\.svn\* ! -path \*OLD\*)
 echo $FILES
 for i in $FILES;do
   iout=$(echo $i | sed 's/\.in$//')
