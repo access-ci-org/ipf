@@ -833,7 +833,7 @@ def writeInit(resource_name, module_names, env_vars, name, path):
 
 
 def getSupportContact():
-    support_contact = "https://software.xsede.org/xcsr-db/v1/support-contacts/1553"
+    support_contact = "https://software.xsede.org/xcsr-db/v1/support-contacts/4154"
     return support_contact
 
 

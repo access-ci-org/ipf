@@ -260,7 +260,7 @@ An invocation of ipf_configure on a resource that has installed
 IPF using RPM might look like:
 
 
-/usr/bin/ipf_configure --rpm --resource_name <RESOURCE_NAME> --workflows=extmodules,compute,activity --publish_to_xsede --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  --modulepath /path/to/modules --scheduler slurm --slurmctl_log <PATH TO slurmctl.log> 
+/usr/bin/ipf_configure --rpm --resource_name <RESOURCE_NAME> --workflows=extmodules,compute,activity --publish --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  --modulepath /path/to/modules --scheduler slurm --slurmctl_log <PATH TO slurmctl.log> 
 
 
 These options mean:
@@ -509,12 +509,23 @@ information otherwise published.
 
 The Modules workflows traverses your MODULEPATH and infers fields such
 as Name and Version from the directory structure/naming conventions of
-the module file layout. Depending on the exact workflow steps, fields
-such as Description may be blank, or inferred from the stdout/stderr
-text of the module. However, the following fields can always be
-explicitly added to a module file:
+the module file layout. Specifically, IPF will traverse the tree under each
+directory in your MODULEPATH, and assume that, in each leaf directory, the
+filename equates to the module version, and the directory name equates to 
+the module name.  We are aware that this is not necessarily true in all cases,
+and there is an open issue in Github discussing potential future ways to 
+better discover name and version.  The issue can be found at:
+https://github.com/access-ci-org/ipf/issues/2
+For the moment, if you have module files that are being misidentified, the
+easiest way forward is to include the fields (such as Name and Version) in the
+file as described below.
 
+Depending on the exact workflow steps, fields such as Description may be 
+blank, or inferred from the stdout/stderr text of the module. However, the 
+following fields can always be explicitly added to a module file:
 
+    Name:
+    Version:
     Description:
     URL:
     Category:
