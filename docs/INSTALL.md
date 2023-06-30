@@ -269,8 +269,11 @@ These options mean:
 --rpm        IPF was installed using RPM; this lets us know where files should be on disk
 
 
---resource_name        The name of your resource.  Not necessary if xdresourceid is in your path
-                                   and returns the desired name 
+--resource_name        The name of your resource.   To find your resource name, 
+            go to "https://operations1.access-ci.org/resources/access-allocated"
+            to find your resource, and use the "Global Resource ID" value, but
+            substitute "access-ci.org" for "xsede.org"
+
 --workflows           Comma delimited list of workflows to configure.  Values can include:
                              compute, activity, extmodules, services
 --publish        Necessary if you wish to configure your workflow to publish to ACCESS's
@@ -315,6 +318,11 @@ $ ipf_configure ----help
 
 -   `ipf_configure` should be run as the user that will run the
     information gathering workflows
+
+-    You must always specify --resource_name, and you should use the 
+     "Global Resource ID" from 
+     https://operations1.access-ci.org/resources/access-allocated except 
+     with "access-ci.org" instead of "xsede.org"
 
 
 -   The preferred way to authenticate is via an X.509 host certificate
@@ -558,7 +566,7 @@ The SupportStatus field should be: development, testing, or production.
 
 
 The SupportContact field must contain either: * the exact URL:
-`https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/helpdesk.xsede.org/`
+`https://software.xsede.org/xcsr-db/v1/support-contacts/4154`
 
 
 -   another URL that returns a JSON document formatted exactly like the one shown above (but with different values)
