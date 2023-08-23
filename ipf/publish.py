@@ -280,7 +280,7 @@ class AmqpStep(PublishStep):
         self.connection = None
         thread.start()
         thread.join(5)
-        if thread.isAlive():
+        if thread.is_alive():
             self.warning("close didn't finish quickly")
 
 class _AmqpConnectionClose(threading.Thread):
