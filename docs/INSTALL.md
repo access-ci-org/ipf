@@ -92,7 +92,7 @@ Batch Scheduler Job Event workflow (activity workflow): *clusters that want to s
 
 
 -   To install IPF on a cluster that presents publicly as multiple resources please review this document:
-    [Advanced Integration Options](https://software.operations.access-ci.org/production/ipf/XSEDE_SP_Advanced_Integration_Options.pdf)
+    [Publishing Software for multiple Resources from a single IPF deployment](https://docs.google.com/document/d/1UXF_pwwZdycuUiV7JToKOKMOHNs6VWjdMWFOjUyKMU4/edit?usp=sharing)
 
 -   Decide what installation method to use: 
     *     RPM is recommended for production installs, as it is managed by system tools, and creates an "xdinfo" user to run the workflows.
