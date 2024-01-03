@@ -127,7 +127,7 @@ class LModApplicationsStep(application.ApplicationsStep):
         handle.Type = ApplicationHandle.MODULE
         handle.Value = name+"/"+version
 
-        if publishflag == True:
+        if publishflag is True:
             apps.add(env, [handle])
 
 #######################################################################################################################
@@ -217,7 +217,7 @@ class ModulesApplicationsStep(application.ApplicationsStep):
                 sanitize = re.sub(r'\\\s+', ' ', m.group(2))
                 modvars[m.group(1)] = sanitize
                 # print(m.group(1)+"="+sanitize)
-        #print("modvars keys, %s",modvars.keys())
+        # print("modvars keys, %s",modvars.keys())
         for line in lines:
             m = re.search("puts stderr \"([^\"]+)\"", line)
             if m is not None:
@@ -250,6 +250,8 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                               False)
         self._acceptParameter("default_support_contact", "default to publish as SupportContact if no value is present in module file",
                               False)
+        self._acceptParameter("lmod_cache_file", "full path to lmod spider cache file to use as source for modules",
+                              False)
 
     def _run(self):
         try:
@@ -260,18 +262,82 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         self.support_contact = self.params.get(
             "default_support_contact", False)
 
+        self.lmod_cache_file = self.params.get(
+            "lmod_cache_file", False)
+
         apps = application.Applications(self.resource_name, self.ipfinfo)
 
-        module_paths = []
-        try:
-            paths = os.environ["MODULEPATH"]
-            module_paths.extend(list(map(os.path.realpath, paths.split(":"))))
-        except KeyError:
-            raise StepError("didn't find environment variable MODULEPATH")
+        walk_path = False
+        
+        # If we're given a lmod_cache_file, we take that as the canonical list
+        # of modules to publish, so we don't walk the module path.
+        if self.lmod_cache_file:
+            try:
+                with open(self.lmod_cache_file, 'r') as file:
+                    lua_code = file.read()
+                from lupa import LuaRuntime
 
-        for path in module_paths:
-            self._addPath(path, path, module_paths, apps)
+                lua = LuaRuntime(unpack_returned_tuples=True)
+                lua.execute(lua_code)
+                spider_table = lua.globals().spiderT
+                spiderT = self._convert_lua_table(spider_table)
+
+                fileTs = []
+                metaModuleTs = []
+                modulepath = []
+
+                # The spiderT dict appears to have all the directories as
+                # top level keys, though
+                # for some reason, spiderT has a version: 5 at the moddir level
+                for moddir in spiderT:
+                    if isinstance(spiderT[moddir], dict):
+                        modulepath.append(moddir)
+                        for package in spiderT[moddir]:
+                            if 'fileT' in spiderT[moddir][package]:
+                                #I only see file entries where fileT is empty, and
+                                #metaModuleT exists
+                                if 'file' in spiderT[moddir][package]:
+                                    metaModuleTs.append(spiderT[moddir][package]['metaModuleT'])
+                                else:
+                                    fileTs.append(spiderT[moddir][package]['fileT'])
+                for fileT in fileTs:
+                    # print(f"Number of fileTs is {len(fileTs)}")
+                    for modulename in fileT:
+                        import json
+                        # print(f"Modulename is {modulename}")
+                        # print(json.dumps(fileT[modulename], indent=4))
+                        # print(f"Adding {fileT[modulename]['fn']} {modulename} {fileT[modulename]['Version']}")
+                        self._addModule(fileT[modulename]['fn'], modulename, fileT[modulename]['Version'], apps)
+            except Exception as e:
+                walk_path = True
+                raise StepError("problem using lmod_cache: %s" % e)
+
+        # Fall back to walking the MODULEPATH if no lmod_cache was given, or if
+        # there was a problem using the lmod_cache
+        if not self.lmod_cache_file or walk_path:
+            module_paths = []
+            try:
+                paths = os.environ["MODULEPATH"]
+                module_paths.extend(list(map(os.path.realpath, paths.split(":"))))
+            except KeyError:
+                raise StepError("didn't find environment variable MODULEPATH")
+
+            for path in module_paths:
+                self._addPath(path, path, module_paths, apps)
         return apps
+
+    def _convert_lua_table(self, lua_table):
+        from lupa import lua_type
+        python_table = {}
+
+        for key, value in lua_table.items():
+            if lua_type(value) == 'table':
+                python_table[key] = self._convert_lua_table(value)
+            else:
+                python_table[key] = value
+
+        return python_table
+
 
     def _addPath(self, path, module_path, module_paths, apps):
         try:
@@ -320,7 +386,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         pathhashobject = hashlib.md5(str(path).encode('utf-8'))
         env.path_hash = pathhashobject.hexdigest()
 
-        if not version.endswith(".lua"):
+        if not path.endswith(".lua"):
             # Weed out files that are not Module files
             m = re.search("#%Module", text)
             if m is None:
@@ -341,7 +407,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
 
         #Now we go through the combined list of tuples and add them to the
         #appropriate env.  Comments override whatis.
-        for k,v in whatis_res+comment_res:
+        for k, v in whatis_res+comment_res:
             if k == "Name":
                 env.SpecifiedName = v
                 #We're going to try overriding AppName as well, as spack/lmod
@@ -388,8 +454,9 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         handle.Value = env.AppName+"/"+env.AppVersion
         env.ExecutionEnvironmentID = IPF_URN_PREFIX+"ExecutionEnvironment:%s" % (
             self.resource_name)
-
-        if publishflag == True:
+        #print(f"Checking flag for {handle.Value}")
+        if publishflag is True:
+            #print(f"Publishing {handle.Value}")
             apps.add(env, [handle])
 
     def _InferDescription(self, text, env):
