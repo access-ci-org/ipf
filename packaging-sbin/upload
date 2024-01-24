@@ -29,7 +29,10 @@ scp -p tmp/$PKG-$VER-$REL.tgz xsedesig@$REPO:$REPO_SOFTWARE/$REPO_SUBDIR/
 scp -p $OUTDIR/docs/* xsedesig@$REPO:$REPO_SOFTWARE/$REPO_SUBDIR/
 scp -p $OUTDIR/INSTALL.md xsedesig@$REPO:$REPO_SOFTWARE/$REPO_SUBDIR/
 scp -p $OUTDIR/INSTALL.html xsedesig@$REPO:$REPO_SOFTWARE/$REPO_SUBDIR/
+scp -p $OUTDIR/Quickstart.md xsedesig@$REPO:$REPO_SOFTWARE/$REPO_SUBDIR/
+scp -p $OUTDIR/Quickstart.html xsedesig@$REPO:$REPO_SOFTWARE/$REPO_SUBDIR/
 
 ssh -l xsedesig  $REPO "cd $REPO_SOFTWARE; rm latest; ln -s $REPO_SUBDIR latest"
 ssh -l xsedesig  $REPO "cd $REPO_SOFTWARE; ln -fs latest/INSTALL* ./"
+ssh -l xsedesig  $REPO "cd $REPO_SOFTWARE; ln -fs latest/Quickstart* ./"
 #ssh -l xsedesig  $REPO "cd $REPO_SOFTWARE; gpg --no-tty --passphrase-file /home/xsedesig/pass --armor --detach-sign $REPO_SOFTWARE/$REPO_SUBDIR/$PKG-$VER-$REL.tgz"

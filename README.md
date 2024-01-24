@@ -34,7 +34,8 @@ This software is licensed the Apache License Version 2.0.
 
 ## Installation
 
-Installation instructions are in [docs/INSTALL.md](docs/INSTALL.md).
+Quickstart instructions are in [docs/Quickstart.md](docs/Quickstart.md).
+More comprehensive instructions are in [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Support Information
 
