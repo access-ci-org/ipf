@@ -120,14 +120,12 @@ class LModApplicationsStep(application.ApplicationsStep):
             if "NOPUBLISH" in flagslist:
                 publishflag = False
                 self.debug("NOPUBLISH set for "+path)
-     
-                
 
         handle = application.ApplicationHandle()
         handle.Type = ApplicationHandle.MODULE
         handle.Value = name+"/"+version
 
-        if publishflag == True:
+        if publishflag is True:
             apps.add(env, [handle])
 
 #######################################################################################################################
@@ -250,6 +248,10 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                               False)
         self._acceptParameter("default_support_contact", "default to publish as SupportContact if no value is present in module file",
                               False)
+        self._acceptParameter("recurse_module_dirs", "legacy behavior: assume that module_path dirs and their recursive subdirs contain at most one level of semantically important subdirs.",
+                              False)
+        self._acceptParameter("ignore_toplevel_modulefiles", "legacy behavior: assume that modulefiles at the top level of each module_path directory should not be reported as software.",
+                              False)
 
     def _run(self):
         try:
@@ -259,6 +261,10 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
 
         self.support_contact = self.params.get(
             "default_support_contact", False)
+        self.recurse_module_dirs = self.params.get(
+            "recurse_module_dirs", False)
+        self.ignore_toplevel_modulefiles = self.params.get(
+            "ignore_toplevel_modulefiles", False)
 
         apps = application.Applications(self.resource_name, self.ipfinfo)
 
@@ -269,11 +275,45 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         except KeyError:
             raise StepError("didn't find environment variable MODULEPATH")
 
-        for path in module_paths:
-            self._addPath(path, path, module_paths, apps)
+        #if recursive is True:
+        if self.recurse_module_dirs is True:
+            for path in module_paths:
+                self._addPathRecursive(path, path, module_paths, apps)
+        else:
+            for path in module_paths:
+                self._traversePaths(path, path, module_paths, apps)
         return apps
 
-    def _addPath(self, path, module_path, module_paths, apps):
+    def _traversePaths(self, path, module_path, module_paths, apps):
+        try:
+            for filepath, dirs, files in os.walk(path, topdown=False):
+                for f in files:
+                    if f.startswith("."):
+                        continue
+                    if f.endswith("~"):
+                        continue
+                    if filepath.startswith(module_path):
+                        name = filepath[len(module_path):].lstrip("/")
+                    if name == "":
+                        # this is a file int he top level of the path from
+                        # MODULEPATH. Its name is the filename, and has no ver.
+                        if self.ignore_toplevel_modulefiles is True:
+                            continue
+                        else:
+                            name = f
+                            ver = "undefined"
+                    else:
+                        ver = f
+
+                    # print(f"module_path: {module_path}, \
+                    # filepath: {filepath}, file: {f}, name: {name}")
+                    if name not in self.exclude:
+                        self._addModule(os.path.join(path, filepath, f),
+                                        name, ver, apps)
+        except OSError:
+            return
+
+    def _addPathRecursive(self, path, module_path, module_paths, apps):
         try:
             file_names = os.listdir(path)
         except OSError:
@@ -298,7 +338,8 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                 name = os.path.basename(path)
                 # ignore files in the top level of a "modulefiles" dir
                 # if name != "modulefiles":
-                self._addModule(os.path.join(path, file), name, file, apps)
+                if name not in self.exclude:
+                    self._addModule(os.path.join(path, file), name, file, apps)
 
     def _addModule(self, path, name, version, apps):
         DEFAULT_VALIDITY = 60*60*24*7  # seconds in a week
@@ -330,8 +371,8 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
             version = version[:len(version)-4]
         env.AppVersion = version
 
-        #Search both whatis([[]]) and general comments for these keywords
-        #This regex strategy inspired by https://stackoverflow.com/a/33411504
+        # Search both whatis([[]]) and general comments for these keywords
+        # This regex strategy inspired by https://stackoverflow.com/a/33411504
         words = ['Name', 'Version', '.*escription', 'URL', 'Category', 'Keywords', 'SupportStatus', 'SupportContact', 'Default', 'IPF_FLAGS']
         longest_first = sorted(words, key=len, reverse=True)
         whatis_re = re.compile(r'whatis\(\[\[((?:{}))\s*:\s*(.*)\]\]\)'.format('|'.join(longest_first)))

@@ -94,7 +94,13 @@ def parseargs():
                         help='Interval in hours for the ExtModules workflow to wait before rerunning')
     parser.add_argument('--services_interval', \
                         help='Interval in hours for the AbstractServices workflow to wait before rerunning')
-
+    parser.add_argument('--modules_exclude', \
+                        help='comma delimited list of names of modules to exclude.')
+    parser.add_argument('--modules_recurse', action='store_true', \
+                        help='legacy: assume that module_path dirs and their recursive subdirs contain at most one level of semantically important subdirs')
+    parser.add_argument('--ignore_toplevel_modulefiles', \
+                        action='store_true', \
+                        help='legacy behavior: assume that modulefiles at the top level of each module_path directory should not be reported as software.')
     return parser.parse_args()
 
 
@@ -179,6 +185,7 @@ def configure_activity_workflow(resource_name,args,template_json):
 def configure_extmodules_workflow(resource_name,args,template_json):
     extmodules_json = getExtModulesJson(template_json)
     setSupportContact(extmodules_json,args)
+    setExtModulesParams(extmodules_json,args)
     setResourceName(resource_name, extmodules_json)
     updateFilePublishPaths(resource_name, extmodules_json)
     if (args.publish):
@@ -294,6 +301,31 @@ def setSupportContact(extmodules_json,args):
                     step_json["params"]["default_support_contact"] = getSupportContact()
             return
     raise Exception("didn't find an ExtendedModApplicationsStep to modify")
+
+def setExtModulesParams(extmodules_json,args):
+    for step_json in extmodules_json["steps"]:
+        if step_json["name"] == "ipf.glue2.modules.ExtendedModApplicationsStep":
+            if args.modules_recurse is True:
+                if "params" in step_json:
+                    step_json["params"]["modules_recurse"] = args.modules_recurse
+                else:
+                    step_json["params"]={}
+                    step_json["params"]["modules_recurse"] = args.modules_recurse
+            if args.ignore_toplevel_modulefiles is True:
+                if "params" in step_json:
+                    step_json["params"]["ignore_toplevel_modulefiles"] = args.ignore_toplevel_modulefiles
+                else:
+                    step_json["params"]={}
+                    step_json["params"]["ignore_toplevel_modulefiles"] = args.ignore_toplevel_modulefiles
+            if args.modules_exclude is not None:
+                if "params" in step_json:
+                    step_json["params"]["exclude"] = args.modules_exclude
+                else:
+                    step_json["params"]={}
+                    step_json["params"]["exclude"] = args.modules_exclude
+            return
+    raise Exception("didn't find an ExtendedModApplicationsStep to modify")
+
 
 
 def getAbstractServicesJson(template_json):
