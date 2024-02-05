@@ -334,7 +334,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
             else:
                 for path in module_paths:
                     self._traversePaths(path, path, module_paths, apps)
-            return apps
+        return apps
 
     def _traversePaths(self, path, module_path, module_paths, apps):
         try:
