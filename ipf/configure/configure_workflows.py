@@ -94,6 +94,8 @@ def parseargs():
                         help='Interval in hours for the ExtModules workflow to wait before rerunning')
     parser.add_argument('--services_interval', \
                         help='Interval in hours for the AbstractServices workflow to wait before rerunning')
+    parser.add_argument('--lmod_cache_file', \
+                        help='full path to lmod cache file to use in ExtModules workflow')
     parser.add_argument('--modules_exclude', \
                         help='comma delimited list of names of modules to exclude.')
     parser.add_argument('--modules_recurse', action='store_true', \
@@ -323,6 +325,12 @@ def setExtModulesParams(extmodules_json,args):
                 else:
                     step_json["params"]={}
                     step_json["params"]["exclude"] = args.modules_exclude
+            if args.lmod_cache_file is not None:
+                if "params" in step_json:
+                    step_json["params"]["lmod_cache_file"] = args.lmod_cache_file
+                else:
+                    step_json["params"]={}
+                    step_json["params"]["lmod_cache_file"] = args.lmod_cache_file
             return
     raise Exception("didn't find an ExtendedModApplicationsStep to modify")
 
