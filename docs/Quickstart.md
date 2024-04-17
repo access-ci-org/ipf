@@ -43,7 +43,9 @@ format, and publish a specific type of resource information.
 ### Software Dependencies
 
 
--   Python 3.6 or newer
+-   Python 3.6 or newer 
+        (Python 3.11 is implicitly required by the RPM as its site-packages
+         are within a python3.11 directory)
 -   The python-amqp package
 -   The python-setuptools package IF installed by RPM.
 
@@ -125,7 +127,8 @@ Batch Scheduler Job Event workflow (activity workflow): *clusters that want to s
 --------------
 
 
-There are two recommended ways to install IPF: you can use pip install, or you can install from ACCESS RPMs on software.xsede.org.
+There are two recommended ways to install IPF: you can use pip install, or you can install from ACCESS RPMs.  The RPMs can be found in the github releases, or 
+in the repositories at software.operations.access-ci.org/production.
 
 Installing IPF from RPMs will put it in the directories /usr/lib/python-`<VERSION>`/site-packages/ipf, /etc/ipf, /var/ipf).
 
@@ -239,7 +242,7 @@ An invocation of ipf_configure on a resource that has installed
 IPF using RPM and wants to publish software information might look like:
 
 
-/usr/bin/ipf_configure --rpm --resource_name <RESOURCE_NAME> --workflows=extmodules --publish --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  --modulepath /path/to/modules 
+/usr/bin/ipf_configure --rpm --resource_name <RESOURCE_NAME> --workflows=extmodules --publish --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  --modulepath /path/to/modules --mod_cache_file /path/to/lmodcache.lua
 
 
 These options mean:
@@ -268,7 +271,7 @@ These options mean:
 --modulepath                The MODULEPATH where the modulefiles for software publishing are 
                                     found.  If not specified $MODULEPATH from the user environment
                                     will be used.
-
+--lmod_cache_file           The location of an lmod cache file that contains exactly the set of modules you wish to publish.  If you do not specify an lmod_cache_file, IPF will fall back to its traditional behavior of walking the MODULEPATH.
 
 
 Other common options:
@@ -360,7 +363,15 @@ add information to your module files that will enhance/override the
 information otherwise published.
 
 
-The Modules workflows traverses your MODULEPATH and infers fields such
+The ExtModules workflow, as of IPF 1.8 has two methods for discovering the 
+modules you wish to publish.  The recommended method, for any site using Lmod, 
+is to point the workflow at an lmod cache file that represents exactly what
+you wish to publish.  It will then publish every module in the spiderT table
+from the cache file, except modules listed in the hiddenT table.
+
+If you are not using Lmod, or do not wish to use lmod cache files, the
+workflow will fall back to the traditional method of walking the MODULEPATH.
+The workflow then traverses your MODULEPATH and infers fields such
 as Name and Version from the directory structure/naming conventions of
 the module file layout. The new IPF default behavior is to treat each 
 directory in your MODULEPATH as a top level directory, under which all of

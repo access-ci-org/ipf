@@ -135,6 +135,8 @@ Batch Scheduler Job Event workflow (activity workflow): *clusters that want to s
 
 
 -   Python 3.6 or newer
+        (Python 3.11 is implicitly required by the RPM as its site-packages
+         are within a python3.11 directory)
 -   The python-amqp package
 -   The python-setuptools package IF installed by RPM.
 
@@ -198,7 +200,24 @@ performed the pip install, you will have to do so manually.
 
 ### RPM Installation
 
+#### RPM Installation from GitHub releases
 
+
+Note(s): - The RPM will automatically create an "xdinfo" account that
+will own the install and that will execute the workflows via sudo.
+
+
+Steps: 1) Download the latest RPM from the IPF releases at GitHub:
+https://github.com/access-ci-org/ipf/releases
+
+
+2)  Install ipf
+
+
+    $ yum install ./ipf-%VER%-%REL.noarch.rpm
+
+
+#### RPM Installation using the yum repositories
 Note(s): - The RPM will automatically create an "xdinfo" account that
 will own the install and that will execute the workflows via sudo.
 
@@ -231,6 +250,14 @@ service files copied to /etc/init.d be erased).
 
 To perform the update to the latest RPM distribution of ipf:
 
+#### When installed from GitHub release RPM
+1.  get the latest RPM from https://github.com/access-ci-org/ipf/releases
+2.  $ sudo yum update ./ipf-%VER%-%REL.noarch.rpm
+3.  If there are new workflows you need to configure, follow the
+    configuration steps as outlined in the Configuration section below.
+
+
+#### When installed from XSEDE/ACCESS-CI yum RPM repos
 1.  $ sudo yum update ipf
 2.  If there are new workflows you need to configure, follow the
     configuration steps as outlined in the Configuration section below.
@@ -260,7 +287,7 @@ An invocation of ipf_configure on a resource that has installed
 IPF using RPM might look like:
 
 
-/usr/bin/ipf_configure --rpm --resource_name <RESOURCE_NAME> --workflows=extmodules,compute,activity --publish --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  --modulepath /path/to/modules --scheduler slurm --slurmctl_log <PATH TO slurmctl.log> 
+/usr/bin/ipf_configure --rpm --resource_name <RESOURCE_NAME> --workflows=extmodules,compute,activity --publish --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  --modulepath /path/to/modules --lmod_cache_file /path/to/lmodcache.lua --scheduler slurm --slurmctl_log <PATH TO slurmctl.log> 
 
 
 These options mean:
@@ -289,6 +316,8 @@ These options mean:
 --modulepath                The MODULEPATH where the modulefiles for software publishing are 
                                     found.  If not specified $MODULEPATH from the user environment
                                     will be used.
+
+--lmod_cache_file           The location of an lmod cache file that contains exactly the set of modules you wish to publish.  If you do not specify an lmod_cache_file, IPF will fall back to its traditional behavior of walking the MODULEPATH.
 
 
 --scheduler                   The batch scheduler in use on your resource.  Typically slurm.
@@ -514,8 +543,15 @@ publishes software information. There are some easy ways, however, to
 add information to your module files that will enhance/override the
 information otherwise published.
 
+The modules workflow, as of IPF 1.8 has two methods for discovering the
+modules you wish to publish.  The recommended method, for any site using Lmod,
+is to point the workflow at an lmod cache file that represents exactly what
+you wish to publish.  It will then publish every module in the spiderT table
+from the cache file, except modules listed in the hiddenT table.
 
-The Modules workflows traverses your MODULEPATH and infers fields such
+If you are not using Lmod, or do not wish to use lmod cache files, the
+workflow will fall back to the traditional method of walking the MODULEPATH.
+The workflow then traverses your MODULEPATH and infers fields such
 as Name and Version from the directory structure/naming conventions of
 the module file layout. Specifically, IPF will traverse the tree under each
 directory in your MODULEPATH, and assume that, in each leaf directory, the
@@ -555,8 +591,7 @@ science or software categories. ACCESS's official fields of science are
 listed at `https://operations-api.access-ci.org/wh2/api/schema/swagger-ui/`.
 Some recommended software categories are: data, compiler, language,
 debugger, profiler, optimization, system, utilities. Category values are
-discoverable in the Research Software Portal in the software *Topics*
-field.
+discoverable at https://support.access-ci.org/tags.
 
 
 The Keywords field may contain any other desired keywords.
