@@ -179,7 +179,6 @@ class ModulesApplicationsStep(application.ApplicationsStep):
         if path.endswith("~"):
             return
 
-        # print(path)
 
         file = open(path)
         lines = file.readlines()
@@ -214,8 +213,6 @@ class ModulesApplicationsStep(application.ApplicationsStep):
                 # Replace \\n followed by whitespace in descriptions:
                 sanitize = re.sub(r'\\\s+', ' ', m.group(2))
                 modvars[m.group(1)] = sanitize
-                # print(m.group(1)+"="+sanitize)
-        # print("modvars keys, %s",modvars.keys())
         for line in lines:
             m = re.search("puts stderr \"([^\"]+)\"", line)
             if m is not None:
@@ -286,6 +283,9 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                 lua.execute(lua_code)
                 spider_table = lua.globals().spiderT
                 spiderT = self._convert_lua_table(spider_table)
+                modules_rc_table = lua.globals().mrcT
+                mrcT = self._convert_lua_table(modules_rc_table)
+                hiddenT = mrcT['hiddenT']
 
                 fileTs = []
                 metaModuleTs = []
@@ -306,13 +306,12 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                                 else:
                                     fileTs.append(spiderT[moddir][package]['fileT'])
                 for fileT in fileTs:
-                    # print(f"Number of fileTs is {len(fileTs)}")
+                    # If neither the filename nor the filename's directory
+                    # are in hiddenT, then we can add the module
                     for modulename in fileT:
-                        import json
-                        # print(f"Modulename is {modulename}")
-                        # print(json.dumps(fileT[modulename], indent=4))
-                        # print(f"Adding {fileT[modulename]['fn']} {modulename} {fileT[modulename]['Version']}")
-                        self._addModule(fileT[modulename]['fn'], modulename, fileT[modulename]['Version'], apps)
+                        if (fileT[modulename]['fn'] not in hiddenT.keys() and fileT[modulename]['fn'][:fileT[modulename]['fn'].rfind('/')] not in hiddenT.keys()):
+                            self._addModule(fileT[modulename]['fn'], modulename, fileT[modulename]['Version'], apps)
+
             except Exception as e:
                 walk_path = True
                 raise StepError("problem using lmod_cache: %s" % e)
@@ -357,8 +356,6 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                     else:
                         ver = f
 
-                    # print(f"module_path: {module_path}, \
-                    # filepath: {filepath}, file: {f}, name: {name}")
                     if name not in self.exclude:
                         self._addModule(os.path.join(path, filepath, f),
                                         name, ver, apps)
@@ -494,9 +491,8 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         handle.Value = env.AppName+"/"+env.AppVersion
         env.ExecutionEnvironmentID = IPF_URN_PREFIX+"ExecutionEnvironment:%s" % (
             self.resource_name)
-        #print(f"Checking flag for {handle.Value}")
+
         if publishflag is True:
-            #print(f"Publishing {handle.Value}")
             apps.add(env, [handle])
 
     def _InferDescription(self, text, env):
@@ -515,7 +511,6 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                 # Replace \\n followed by whitespace in descriptions:
                 sanitize = re.sub(r'\\\s+', ' ', m.group(2))
                 modvars[m.group(1)] = sanitize
-                # print(m.group(1)+"="+sanitize)
         desc_match = re.findall("puts stderr \"([^\"]+)\"", text)
         for line in desc_match:
             # self.debug("line is "+line)
