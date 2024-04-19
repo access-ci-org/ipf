@@ -586,7 +586,7 @@ The URL field should point to local user documentation.
 
 The Category field may contain one or more comma separated fields of
 science or software categories. ACCESS's official fields of science are
-listed at `https://operations-api.access-ci.org/wh2/api/schema/swagger-ui/`.
+listed at `https://operations-api.access-ci.org/wh2/allocations/v1/fos/?format=html&hierarchy=true`.
 Some recommended software categories are: data, compiler, language,
 debugger, profiler, optimization, system, utilities. Category values are
 discoverable at https://support.access-ci.org/tags.
