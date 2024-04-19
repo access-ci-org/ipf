@@ -71,7 +71,7 @@ if __name__ == "__main__":
     _createManifest()
     _createSetupCfg()
     setup(name="ipf",
-          version="1.7.1",
+          version="1.8.0",
           description="The Information Publishing Framework",
           long_description=readme(),
           classifiers=[
@@ -83,7 +83,7 @@ if __name__ == "__main__":
           keywords="monitoring information gathering publishing glue2",
           url="https://github.com/access-ci-org/ipf",
           author="Eric Blau, Warren Smith",
-          author_email="blau@anl.gov",
+          author_email="blau@globus.org",
           license="Apache",
           packages=["ipf","ipf.glue2","ipf.configure","ipf.configure.test"],
           install_requires=["amqp >=1.4","python-dateutil"],

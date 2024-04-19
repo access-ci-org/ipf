@@ -253,8 +253,7 @@ These options mean:
 
 --resource_name        The name of your resource.   To find your resource name, 
             go to "https://operations.access-ci.org/resources/access-allocated"
-            to find your resource, and use the "Global Resource ID" value, but
-            substitute "access-ci.org" for "xsede.org"
+            to find your resource, and use the "Global Resource ID" value.
 
 --workflows           Comma delimited list of workflows to configure.  Values can include:
                              compute, activity, extmodules, services
@@ -295,8 +294,7 @@ $ ipf_configure ----help
 
 -    You must always specify --resource_name, and you should use the 
      "Global Resource ID" from 
-     https://operations.access-ci.org/resources/access-allocated except 
-     with "access-ci.org" instead of "xsede.org"
+     https://operations.access-ci.org/resources/access-allocated 
 
 
 -   The preferred way to authenticate is via an X.509 host certificate

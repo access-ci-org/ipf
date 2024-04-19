@@ -5,6 +5,7 @@ nothing in the hiddenT table will be published.
 * new configuration parameter --lmod_cache_file
 * fix for init script: su command needed a -c argument
 * IPF documentation revised for clarity and completeness
+* ipf_configure default for support contact now JSON blob not URL
 
 for 1.7-1
 * fileread.py reads and parses generic json files, sample etc/ipf/workflow/templates/{generic_print,generic_publish}.json

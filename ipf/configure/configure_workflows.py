@@ -873,7 +873,8 @@ def writeInit(resource_name, module_names, env_vars, name, path):
 
 
 def getSupportContact():
-    support_contact = "https://software.xsede.org/xcsr-db/v1/support-contacts/4154"
+    support_contact = '[{"GlobalID":"support.access-ci.org","Name":"ACCESS Support","Description":"ACCESS Support","ShortName":"ACCESS","ContactURL":"https://support.access-ci.org"}]'
+
     return support_contact
 
 

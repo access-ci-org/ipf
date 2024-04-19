@@ -147,7 +147,7 @@ Batch Scheduler Job Event workflow (activity workflow): *clusters that want to s
 --------------
 
 
-There are two recommended ways to install IPF: you can use pip install, or you can install from ACCESS RPMs on software.xsede.org.
+There are two recommended ways to install IPF: you can use pip install, or you can install from ACCESS RPMs on software.operations.access-ci.org.
 
 Installing IPF from RPMs will put it in the directories /usr/lib/python-`<VERSION>`/site-packages/ipf, /etc/ipf, /var/ipf).
 
@@ -222,10 +222,10 @@ Note(s): - The RPM will automatically create an "xdinfo" account that
 will own the install and that will execute the workflows via sudo.
 
 
-Steps: 1) Configure XSEDE RPM repository trust. For a production version use
-    [Production Repo Trust Instructions](https://software.xsede.org/production/repo/repoconfig.txt).
+Steps: 1) Configure ACCESS-CI/XSEDE RPM repository trust. For a production version use
+    [Production Repo Trust Instructions](https://software.operations.access-ci.org/production/repo/repoconfig.txt).
 For a development/testing version use
-    [Development Repo Trust Instructions](https://software.xsede.org/development/repo/repoconfig.txt).
+    [Development Repo Trust Instructions](https://software.operations.access-ci.org/development/repo/repoconfig.txt).
 
 
 2)  Install ipf
@@ -257,7 +257,7 @@ To perform the update to the latest RPM distribution of ipf:
     configuration steps as outlined in the Configuration section below.
 
 
-#### When installed from XSEDE/ACCESS-CI yum RPM repos
+#### When installed from ACCESS-CI/XSEDE yum RPM repos
 1.  $ sudo yum update ipf
 2.  If there are new workflows you need to configure, follow the
     configuration steps as outlined in the Configuration section below.
@@ -298,8 +298,7 @@ These options mean:
 
 --resource_name        The name of your resource.   To find your resource name, 
             go to "https://operations.access-ci.org/resources/access-allocated"
-            to find your resource, and use the "Global Resource ID" value, but
-            substitute "access-ci.org" for "xsede.org"
+            to find your resource, and use the "Global Resource ID" value.
 
 --workflows           Comma delimited list of workflows to configure.  Values can include:
                              compute, activity, extmodules, services
@@ -351,7 +350,6 @@ $ ipf_configure ----help
 -    You must always specify --resource_name, and you should use the 
      "Global Resource ID" from 
      https://operations.access-ci.org/resources/access-allocated except 
-     with "access-ci.org" instead of "xsede.org"
 
 
 -   The preferred way to authenticate is via an X.509 host certificate
@@ -600,26 +598,21 @@ The Keywords field may contain any other desired keywords.
 The SupportStatus field should be: development, testing, or production.
 
 
-The SupportContact field must contain either: * the exact URL:
-`https://software.xsede.org/xcsr-db/v1/support-contacts/4154`
+The SupportContact field must contain either: 
+
+-   a one-liner JSON blob such as the default value:
+
+    `[{"GlobalID":"support.access-ci.org","Name":"ACCESS Support","Description":"ACCESS Support","ShortName":"ACCESS","ContactURL":"https://support.access-ci.org"}]`
 
 
 -   another URL that returns a JSON document formatted exactly like the one shown above (but with different values)
 
 
--   or a one-liner JSON blob of the form:
-    `[{"GlobalID":"support.access-ci.org","Name":"ACCESS Support","Description":"ACCESS Support","ShortName":"ACCESS","ContactURL":"https://support.access-ci.org"}]`
-
-
-All XSEDE registered support contact organizations are found at:
-`https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/`
-To register a new support contact submit a ticket to ACCESS Operations with the
-Subject: Please register a new Support Contact Organization.
-
 
 `ipf_configure` offers the opportunity to define a default SupportContact that is published for every module
-that does not define its own. By default, this value is:
-`https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/helpdesk.xsede.org/`
+that does not define its own. By default, this value is as above:
+
+    `[{"GlobalID":"support.access-ci.org","Name":"ACCESS Support","Description":"ACCESS Support","ShortName":"ACCESS","ContactURL":"https://support.access-ci.org"}]`
 
 
 Example:
@@ -630,11 +623,10 @@ Example:
     ## modulefiles/accessusage/1.5.2
     ##
     module-whatis "Description: ACCESS Allocation Usage lookup tool"
-    module-whatis "URL: http://software.xsede.org/production/accessusage/latest/"
+    module-whatis "URL: http://software.operations.access-ci.org/production/accessusage/latest/"
     module-whatis "Category: System tools"
     module-whatis "Keywords: information"
     module-whatis "SupportStatus: testing"
-    module-whatis "SupportContact: https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/support.access-ci.org/"
 
 
 However, IPF would read these just as well if they were:
@@ -645,11 +637,10 @@ However, IPF would read these just as well if they were:
     ## modulefiles/accessusage/1.5.2
     ##
     #module-whatis "Description: Allocation Usage lookup tool"
-    # "URL: http://software.xsede.org/production/accessusage/latest/"
+    # "URL: http://software.operations.access-ci.org/production/accessusage/latest/"
     # Random text that is irrelevant "Category: System tools"
     # module-whatis "Keywords: information"
     module-whatis "SupportStatus: testing"
-    module-whatis "SupportContact: https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/support.access-ci.org/"
 
 
 With this in mind, it is recommended that you add these fields to relevant module files.
