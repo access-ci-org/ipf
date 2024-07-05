@@ -430,7 +430,13 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                 return
         else:
             # correct version string to remove ".lua"
-            version = version[:len(version)-4]
+            # Lmod cache may have non string as version
+            # If not a string, set to empty string
+            if isinstance(version, str):
+                if version.endswith(".lua"):
+                    version = version[:len(version)-4]
+            else:
+                version = ""
         env.AppVersion = version
 
         # Search both whatis([[]]) and general comments for these keywords
@@ -480,7 +486,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         if env.Description is None:
             env.Description = self._InferDescription(text, env)
         if "SupportContact" not in env.Extension:
-            self.debug("no SupportContact")
+            #self.debug("no SupportContact")
             if self.support_contact:
                 env.Extension["SupportContact"] = self.support_contact
 
