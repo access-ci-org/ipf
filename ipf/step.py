@@ -29,6 +29,8 @@ from ipf.error import NoMoreInputsError, StepError
 class Step(multiprocessing.Process):
 
     def __init__(self):
+        # On MacOS, might need to force multiprocessing to use fork
+        # multiprocessing.set_start_method('fork',force=True)
         multiprocessing.Process.__init__(self)
 
         self.id = None        # a unique id for the step in a workflow

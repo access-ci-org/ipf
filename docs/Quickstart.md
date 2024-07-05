@@ -242,7 +242,7 @@ An invocation of ipf_configure on a resource that has installed
 IPF using RPM and wants to publish software information might look like:
 
 
-/usr/bin/ipf_configure --rpm --resource_name <RESOURCE_NAME> --workflows=extmodules --publish --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  --modulepath /path/to/modules --mod_cache_file /path/to/lmodcache.lua
+/usr/bin/ipf_configure --rpm --resource_name <RESOURCE_NAME> --workflows=extmodules --publish --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  --modulepath /path/to/modules --lmod_cache_file /path/to/lmodcache.lua
 
 
 These options mean:
