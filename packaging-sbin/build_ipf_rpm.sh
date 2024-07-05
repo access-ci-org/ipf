@@ -26,6 +26,7 @@ ls -al build/bdist.linux_x86_64/rpm/SOURCES/ipf-$VERSION.tar.gz
 gsed -i 's/Name: %{name}/Name: %{name}\nObsoletes: ipf-xsede/' dist/ipf.spec
 gsed -i 's/Requires: python-amqp >= 1.4/AutoReq: no\nRequires: python3-amqp >= 1.4, python3,  python3-setuptools, /' dist/ipf.spec
 gsed -i 's/python-dateutil/python3-dateutil/' dist/ipf.spec
+gsed -i 's/python-lupa/python3-lupa/' dist/ipf.spec
 #gsed -i 's/%define name ipf/%define name ipf-xsede/' dist/ipf.spec
 gsed -i "s/%define release 1/%define release $RELEASE/" dist/ipf.spec
 gsed -i "s/License: Apache/Patch0: ipf-rpm-only-mods.patch\nLicense: Apache/" dist/ipf.spec

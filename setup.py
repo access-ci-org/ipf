@@ -58,6 +58,7 @@ def _createSetupCfg():
 [bdist_rpm]
 requires = python-amqp >= 1.4
     python-dateutil
+    python-lupa
     """)
     f.close()
 
@@ -86,7 +87,7 @@ if __name__ == "__main__":
           author_email="blau@globus.org",
           license="Apache",
           packages=["ipf","ipf.glue2","ipf.configure","ipf.configure.test"],
-          install_requires=["amqp >=1.4","python-dateutil"],
+          install_requires=["amqp >=1.4","lupa","python-dateutil"],
           entry_points={
               "console_scripts": ["ipf_workflow=ipf.run_workflow:main",
                                   "ipf_configure=ipf.configure.configure_workflows:configure"],
