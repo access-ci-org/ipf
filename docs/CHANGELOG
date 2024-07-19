@@ -1,3 +1,8 @@
+for 1.8.1-1
+* Bug fix for how IPF handles an edge case that can occur in lmod_cache files (spiderT.lua) where the version of a module might not be a string.
+* Formalizes the lupa dependency needed for reading lua files.
+* packaging changes
+
 for 1.8-1
 * New lmod_cache_file parameter to ExtModules workflow; when specified, only
 the modules in the spiderT table from the cache file will be published, and
