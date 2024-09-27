@@ -1,3 +1,10 @@
+for 1.8.3
+* CTT-221 create an install-from-repo method
+* CTT-303 Add version to IPF Quick Install
+* CTT-304 backwards compatible quick install
+* CTT-340 Update docs for 3 install methods
+* Fix #16 (File is created for whatever command line option flag is given.)
+
 for 1.8.2-1
 * Bug fix for extmodules workflow where IPF was interpreting the Application
 Name to be "ApplicationName/ApplicationVersion"
