@@ -1,0 +1,51 @@
+#!/bin/bash
+
+INSTALL_DIR=___INSTALL_DIR___
+CLEANSE="$INSTALL_DIR"/etc/cleanse.conf
+CONFIGS=( $( ls "$INSTALL_DIR"/etc/configure_extmodules*.conf ) )
+DATE=$( date +%Y-%m-%dT%H:%M:%S )
+PYTHON="$INSTALL_DIR"/.venv/bin/python
+PYTHONPATH=$(readlink -e "$INSTALL_DIR"/..)
+WORKFLOWS_CONF="$INSTALL_DIR"/etc/workflows.conf
+WORKFLOW_DIR="$INSTALL_DIR"/etc/ipf/workflow/glue2
+
+export PYTHONPATH
+
+# get amqp credentials from separate file if it exists
+amqp_fn="$INSTALL_DIR"/etc/amqp.conf
+[[ -r "$amqp_fn" ]] && source "$amqp_fn"
+
+# Loop through all config files found
+for cfg in "${CONFIGS[@]}"; do
+  source "$CLEANSE" #unset var settings from any previous run
+  source "$cfg" #read in new var settings for this specific run
+
+  # create workflow files
+  $PYTHON "$INSTALL_DIR"/configure/configure_workflows.py \
+    --base_dir "$INSTALL_DIR" \
+    ${AMQP_CERTIFICATE:+--amqp_certificate $AMQP_CERTIFICATE} \
+    ${AMQP_CERTIFICATE_KEY:+--amqp_certificate_key $AMQP_CERTIFICATE_KEY} \
+    ${AMQP_PASSWORD:+--amqp_password $AMQP_PASSWORD} \
+    ${AMQP_USERNAME:+--amqp_username $AMQP_USERNAME} \
+    ${LMOD_CACHE_FILE:+--lmod_cache_file $LMOD_CACHE_FILE} \
+    ${MODULEPATH:+--modulepath $MODULEPATH} \
+    ${MODULES:+--modules $MODULES} \
+    ${MODULES_EXCLUDE:+--modules_exclude $MODULES_EXCLUDE} \
+    ${MODULES_INTERVAL:+--modules_interval $MODULES_INTERVAL} \
+    ${PUBLISH:+--publish} \
+    ${RESOURCE_NAME:+--resource_name $RESOURCE_NAME} \
+    ${SUPPORT_CONTACT:+--support_contact $SUPPORT_CONTACT} \
+    ${WORKFLOWS:+--workflows $WORKFLOWS}
+
+done #for cfg in "${CONFIGS[@]}"; do
+
+# # add any new workflow files to site custom exec config
+# find "$WORKFLOW_DIR" -mindepth 1 -maxdepth 1 -type f -name '*.json' \
+# | while read ; do
+#     fn="$(basename $REPLY)"
+#     grep -q -F "$fn" "$WORKFLOWS_CONF" || {
+#       >>"$WORKFLOWS_CONF" echo
+#       >>"$WORKFLOWS_CONF" echo "# added $fn on $DATE"
+#       >>"$WORKFLOWS_CONF" echo "#$REPLY"
+#     }
+#   done
