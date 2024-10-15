@@ -3,11 +3,8 @@
 INSTALL_DIR=___INSTALL_DIR___
 CLEANSE="$INSTALL_DIR"/etc/cleanse.conf
 CONFIGS=( $( ls "$INSTALL_DIR"/etc/configure_extmodules*.conf ) )
-DATE=$( date +%Y-%m-%dT%H:%M:%S )
 PYTHON="$INSTALL_DIR"/.venv/bin/python
 PYTHONPATH=$(readlink -e "$INSTALL_DIR"/..)
-WORKFLOWS_CONF="$INSTALL_DIR"/etc/workflows.conf
-WORKFLOW_DIR="$INSTALL_DIR"/etc/ipf/workflow/glue2
 
 export PYTHONPATH
 
@@ -38,14 +35,3 @@ for cfg in "${CONFIGS[@]}"; do
     ${WORKFLOWS:+--workflows $WORKFLOWS}
 
 done #for cfg in "${CONFIGS[@]}"; do
-
-# # add any new workflow files to site custom exec config
-# find "$WORKFLOW_DIR" -mindepth 1 -maxdepth 1 -type f -name '*.json' \
-# | while read ; do
-#     fn="$(basename $REPLY)"
-#     grep -q -F "$fn" "$WORKFLOWS_CONF" || {
-#       >>"$WORKFLOWS_CONF" echo
-#       >>"$WORKFLOWS_CONF" echo "# added $fn on $DATE"
-#       >>"$WORKFLOWS_CONF" echo "#$REPLY"
-#     }
-#   done
