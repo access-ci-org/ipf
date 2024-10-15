@@ -68,7 +68,6 @@ stop() {
     PID=`cat $PID_FILE`
     pkill -9 -P $PID
     RETVAL=$?
-    echo
     if [ $RETVAL -eq 0 ] ; then
       echo "Stopped"
       rm_pid_file

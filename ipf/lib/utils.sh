@@ -10,11 +10,11 @@ INSTALL_DIR=___INSTALL_DIR___
 ###
 
 err() {
-	echo -e "${RED}✗ ERROR: $*${NC}" | tee /dev/stderr
+	echo -e "${RED}✗ ERROR: $*${NC}"
 }
 
 success() {
-  echo -e "${GREEN}✓ $*${NC}" | tee /dev/stderr
+  echo -e "${GREEN}✓ $*${NC}"
 }
 
 

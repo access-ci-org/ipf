@@ -28,10 +28,7 @@ mk_symlinks() {
   for src in "${_config_list[@]}"; do
     fn=$( basename "$src" )
     tgt="$ETC"/"$fn"
-    # if ! [[ -L "$tgt" ]] ; then
-    #   rm -f "$tgt"
-      ln -sf "$src" "$tgt"
-    # fi
+    ln -sf "$src" "$tgt"
   done
 }
 
