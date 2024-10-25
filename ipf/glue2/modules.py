@@ -490,7 +490,15 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
             if self.support_contact:
                 env.Extension["SupportContact"] = self.support_contact
 
-
+        # Some AppNames already include the "/Version" string, particularly
+        # if they're coming from an lmod cache, and the Name hasn't been
+        # specified in the module file itself.  In this case, we need to
+        # strip the version string from the AppName or weirdness happens.
+        try:
+            index = env.AppName.index("/"+env.AppVersion)
+            env.AppName = env.AppName[:index]
+        except ValueError as e:
+            self.warning("%s" % e)
 
         handle = application.ApplicationHandle()
         handle.Type = ApplicationHandle.MODULE
