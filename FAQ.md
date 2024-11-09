@@ -26,6 +26,10 @@ Yes!
    * ```bash
      bash ~/ipf/bin/wfm stop
      ```
+1. Make backups of any config files
+   * ```bash
+     bash ~/ipf/bin/save_configs.sh
+     ```
 1. Remove the install directory
    * ```bash
      rm -rf ~/ipf

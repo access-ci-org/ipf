@@ -42,6 +42,25 @@ restore_config_links() {
 }
 
 
+set_version() {
+  # Create a setuptools style METADATA file with the current version string
+  [[ $DEBUG -eq $YES ]] && set -x
+  local _version=$( cat "$INSTALL_DIR"/version )
+  local _site_pkgs=$( "$V_PYTHON" -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])' )
+  local _fn_metadata="$_site_pkgs"/ipf-"${_version}".dist-info/METADATA
+  local _dn_metadata=$( dirname "$_fn_metadata" )
+  mkdir -p "$_dn_metadata" || die "Failed to make IPF metadata directory"
+  >"$_fn_metadata" cat <<ENDHERE
+Metadata-Version: 2.1
+Name: ipf
+Version: $_version
+ENDHERE
+  [[ -f "$_fn_metadata" ]] || die "Failed to make IPF metadata file"
+  grep '^Version' "$_fn_metadata" || die "Failed to set version"
+  success "Version set successfully"
+}
+
+
 [[ $DEBUG -eq $YES ]] && set -x
 
 assert_python_minimum_version
@@ -51,3 +70,5 @@ mk_venv
 install_dependencies
 
 restore_config_links
+
+set_version

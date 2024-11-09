@@ -3,7 +3,7 @@
 # DO NOT RUN THIS BY HAND
 # This file is for use by https://github.com/andylytical/quickstart
 
-INSTALL_DIR="$(pwd)" #this is the directory the user invoked quickstart
+INSTALL_DIR="$(pwd)" #this is the directory from which the user invoked quickstart
 BASE=$(readlink -e $( dirname $0 ) )
 IPF_SRC="$BASE/ipf"
 TS=$(date +%s)
@@ -64,10 +64,20 @@ install_special() {
     "$INSTALL_DIR"
 }
 
+
+install_version() {
+  [[ $DEBUG -eq $YES ]] && set -x
+  local _version=$( awk -F '"' '/version=/ {print $2; exit;}' "$BASE"/setup.py )
+  log "VERSION = $_version"
+  echo "$_version" > "$INSTALL_DIR"/ipf/version
+}
+
 [[ $DEBUG -eq $YES ]] && set -x
 
 update_files
 
 install_common
 
-install_special
+# install_special
+
+install_version
