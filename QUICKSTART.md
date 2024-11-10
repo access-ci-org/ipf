@@ -2,7 +2,7 @@
 
 1. Get installer
    * ```bash
-     curl -o ~/install_ipf.sh https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads/CTT-221/aloftus/install_from_repo/go.sh
+     curl -o ~/install_ipf.sh https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads/CTT-304/aloftus/backwards_compatable/go.sh
      ```
 
 1. Run installer
@@ -18,7 +18,7 @@
      ```
      
 # Setup the extmodules workflow
-### Configure the extmodules workflow
+## Configure the extmodules workflow
 1. Set variables for your site
    * ```bash
      cp ~/ipf/etc/configure_extmodules.conf.sample ~/ipf/etc/configure_extmodules.conf
@@ -32,7 +32,7 @@
      bash ~/ipf/bin/configure_extmodules
      ```
 
-### Test the extmodules workflow
+## Test the extmodules workflow
 1. Start the workflow
    * ```bash
      bash ~/ipf/bin/wfm start
@@ -47,10 +47,10 @@
      bash ~/ipf/bin/wfm stop
      ```
 
-### Test the publishing setup
+## Test the publishing setup
 1. Enable publishing
    * ```bash
-     sed -ie '/PUBLISH=/cPUBLISH=1' ~/ipf/etc/configure_extmodules*.conf
+     sed -i -e '/PUBLISH=/cPUBLISH=1' ~/ipf/etc/configure_extmodules*.conf
      ```
 1. Re-run the configure script
    * ```bash

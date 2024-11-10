@@ -11,6 +11,10 @@ YES=0
 NO=1
 DEBUG=$YES
 VERBOSE=$YES
+# Files that are renamed on install, map of SRC -> TGT
+declare -A SPECIAL_MAP=(
+  [ipf/etc/ipf/init.d/ipf-WORKFLOW.wfm]=ipf/etc/ipf/init.d/ipf-WORKFLOW
+)
 
 
 die() {
@@ -57,11 +61,10 @@ install_common() {
 
 install_special() {
   [[ $DEBUG -eq $YES ]] && set -x
-  rsync -v --recursive \
-    --ignore-existing \
-    --include-from="$BASE"/setup.excludes \
-    "$IPF_SRC" \
-    "$INSTALL_DIR"
+  for src in "${!SPECIAL_MAP[@]}"; do
+    tgt="${SPECIAL_MAP[$src]}"
+    cp "${BASE}/${src}" "${INSTALL_DIR}/${tgt}"
+  done
 }
 
 
@@ -78,6 +81,6 @@ update_files
 
 install_common
 
-# install_special
+install_special
 
 install_version
