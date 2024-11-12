@@ -4,13 +4,16 @@
 import os
 import sys
 
-position_file = open(sys.argv[1], "w")
+def main():
+    position_file = open(sys.argv[1], "w")
 
-for file in sys.argv[2:]:
-    st = os.stat(file)
-    ID = "%s-%d" % (st.st_dev, st.st_ino)
-    position = "%s %d\n" % (ID,st.st_size)
-    position_file.write(position)
+    for file in sys.argv[2:]:
+        st = os.stat(file)
+        ID = "%s-%d" % (st.st_dev, st.st_ino)
+        position = "%s %d\n" % (ID,st.st_size)
+        position_file.write(position)
 
-position_file.close()
+    position_file.close()
 
+if __name__ == '__main__':
+  main()
