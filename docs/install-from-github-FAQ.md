@@ -20,8 +20,6 @@ bash ~/ipf/bin/wfm status
 
 ## I messed up the install. Can I start over from scratch?
 Yes!
-1. (optional) Save customized configs
-   * (see the "Backup workflow configs" later in this document).
 1. Stop any running workflows
    * ```bash
      bash ~/ipf/bin/wfm stop

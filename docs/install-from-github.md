@@ -2,7 +2,7 @@
 
 1. Get installer
    * ```bash
-     curl -o ~/install_ipf.sh https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads/CTT-304/aloftus/backwards_compatable/go.sh
+     curl -o ~/install_ipf.sh https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads/master/go.sh
      ```
 
 1. Run installer
@@ -19,7 +19,7 @@
      
 # Setup the extmodules workflow
 ## Configure the extmodules workflow
-1. Set variables for your site
+1. Set variables for your site (for upgrade or re-install, skip this step)
    * ```bash
      cp ~/ipf/etc/configure_extmodules.conf.sample ~/ipf/etc/configure_extmodules.conf
      vim ~/ipf/etc/configure_extmodules.conf
@@ -72,6 +72,11 @@
      ```
 
 
-# NOTES:
+# Errata
+
+## Notes
 - This install method currently supports only the `extmodules` workflow.
   Other workflows will be added in the future.
+
+## See also
+- [Install from github FAQ](install-from-github-FAQ.md)

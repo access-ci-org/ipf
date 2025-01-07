@@ -72,7 +72,7 @@ if __name__ == "__main__":
     _createManifest()
     _createSetupCfg()
     setup(name="ipf",
-          version="1.8.2",
+          version="1.8.4",
           description="The Information Publishing Framework",
           long_description=readme(),
           classifiers=[

@@ -1,3 +1,6 @@
+for 1.8.4
+* Fix #20 (broken links in "README" & "install-from-github", update version in setup.py)
+
 for 1.8.3
 * CTT-221 create an install-from-repo method
 * CTT-303 Add version to IPF Quick Install

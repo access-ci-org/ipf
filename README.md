@@ -11,9 +11,9 @@ IPF is a Python program that gathers resource information, formats it in a [GLUE
 
 Three install methods are available and listed below in ease of use order.
 
-1. [Install from Github](docs/install-via-github.md)
-1. [Install via Pip](docs/install-from-pip.md)
-1. [Install via RPM](docs/install-from-rpm.md) (deprecated)
+1. [Install from Github](docs/install-from-github.md)
+1. [Install from Pip](docs/install-from-pip.md)
+1. [Install from RPM](docs/install-from-rpm.md) (deprecated)
 
 
 ## Configure Workflows
