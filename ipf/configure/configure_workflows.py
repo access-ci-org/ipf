@@ -907,7 +907,7 @@ def setBaseDir(args):
     if args.rpm:
        _base_dir = "/"
     elif args.pip:
-        _base_dir = sysconfig.get_paths()["purelib"]
+        _base_dir = os.path.join(sysconfig.get_paths()["purelib"], "ipf")
     else:
         print('\nNo base directory specified.  Please do one of the following:\n     *if you installed IPF from an RPM, specify the "--rpm" command line option.\n     *if you installed using pip, specify the "--pip" command line option.\n     *otherwise, use the "--base_dir <path>" command line option where <path> is the root of where you installed IPF.\n')
         raise SystemExit

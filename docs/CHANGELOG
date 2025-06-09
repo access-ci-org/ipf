@@ -1,3 +1,17 @@
+for 1.9.0
+* Pip is now the only supported install method
+* Simplified install to a handful of copy-n-paste instructions
+  (config files require manual edits but they are simplified to just one or two edits in the most common case)
+* Modernize packaging with pyproject.toml, which enables:
+  * Version checks, requirements, and dependencies managed automatically by pip
+  * Version is now tracked using git tags
+* ca_certs updated to include only Let'sEncrypt and InCommon root CA certs
+* Add a script to manage (rebuilding or appending certs to) the ca_certs file
+* Add github actions to publish to pypi and test.pypi
+* Add support to install dev versions from test.pypi
+* Old docs moved to "xsede" folder pending further review (see README in that folder)
+* In-progress docs moved to "drafts" folder
+
 for 1.8.4
 * Fix #20 (broken links in "README" & "install-from-github", update version in setup.py)
 

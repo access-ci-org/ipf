@@ -1,29 +1,23 @@
-
-# access-ci-org/ipf %VER%-%REL%
-# README
+# IPF - Information Publishing Framework
 
 ## Overview
 
 IPF is a Python program that gathers resource information, formats it in a [GLUE2 standard format (5)](#glue2), and publishes it to a RabbitMQ service. IPF is configured to run one or more “workflows” each defining the steps that IPF executes to collect, format, and publish a specific type of resource information.
 
 
-## Installation
+## Quickstart
 
-Three install methods are available and listed below in ease of use order.
+#### Install
+1. [Installation Guide](docs/install.md)
 
-1. [Install from Github](docs/install-from-github.md)
-1. [Install from Pip](docs/install-from-pip.md)
-1. [Install from RPM](docs/install-from-rpm.md) (deprecated)
-
-
-## Configure Workflows
-
-After installing IPF, [Configure Workflows](docs/configure-workflows.md)
+#### Configure Workflows
+1. [Configure Software Modules Publishing](docs/configure-extmodules-workflow.md)
+1. ( other workflows coming soon )
 
 ## Additional Information
 
-* [Best Practices](docs/best-practices.md)
-* [Testing](docs/testing.md)
+* [Best practices for reporting accurate Software Module information](docs/best-practices.md)
+* [FAQ](docs/faq.md)
 
 ## Support Information
 
@@ -35,7 +29,7 @@ Software bugs may be reported as GitHub issues.  ACCESS-CI related support reque
 
 ## License
 
-This software is licensed the Apache License Version 2.0.
+[LICENSE](LICENSE)
 
 ## Acknowledgements
 

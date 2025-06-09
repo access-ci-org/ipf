@@ -63,7 +63,7 @@ ENDHELP
 
 ACTION=
 case $1 in
-  -h|--help) print_usage; exit 0;;
+  -h|--help|help) print_usage; exit 0;;
   ls|list) print_workflow_files; exit 0;;
   st|status) ACTION=status;;
   go|start) ACTION=start;;

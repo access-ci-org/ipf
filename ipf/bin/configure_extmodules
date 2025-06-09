@@ -4,9 +4,6 @@ INSTALL_DIR=___INSTALL_DIR___
 CLEANSE="$INSTALL_DIR"/etc/cleanse.conf
 CONFIGS=( $( ls "$INSTALL_DIR"/etc/configure_extmodules*.conf ) )
 PYTHON="$INSTALL_DIR"/.venv/bin/python
-PYTHONPATH=$(readlink -e "$INSTALL_DIR"/..)
-
-export PYTHONPATH
 
 # get amqp credentials from separate file if it exists
 amqp_fn="$INSTALL_DIR"/etc/amqp.conf
@@ -19,7 +16,7 @@ for cfg in "${CONFIGS[@]}"; do
 
   # create workflow files
   $PYTHON "$INSTALL_DIR"/configure/configure_workflows.py \
-    --base_dir "$INSTALL_DIR" \
+    --pip \
     ${AMQP_CERTIFICATE:+--amqp_certificate $AMQP_CERTIFICATE} \
     ${AMQP_CERTIFICATE_KEY:+--amqp_certificate_key $AMQP_CERTIFICATE_KEY} \
     ${AMQP_PASSWORD:+--amqp_password $AMQP_PASSWORD} \
