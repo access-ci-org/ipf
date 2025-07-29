@@ -1,4 +1,0 @@
-# Don't commit artifacts in tmp
-tmp/
-# Don't commit artifacts in dist
-dist/

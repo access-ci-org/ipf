@@ -1,0 +1,50 @@
+[build-system]
+requires = [ "setuptools>=61", "setuptools-scm", ]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ipf"
+dynamic = [
+  "version",
+  "readme",
+]
+description = "The Information Publishing Framework"
+keywords = [
+  "monitoring",
+  "information",
+  "gathering",
+  "publishing",
+  "glue2",
+]
+authors = [
+  {name = "Eric Blau", email = "blau@globus.org"},
+  {name = "Warren Smith"},
+]
+requires-python = ">=3.6"
+license-files = ["LICEN[CS]E*"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Programming Language :: Python :: 3",
+  "Topic :: System :: Monitoring",
+]
+dependencies = [
+  "amqp >=1.4",
+  "lupa",
+  "python-dateutil",
+]
+
+[project.urls]
+Repository = "https://github.com/access-ci-org/ipf"
+
+[project.scripts]
+ipf_workflow = "ipf.run_workflow:main"
+ipf_configure = "ipf.configure.configure_workflows:configure"
+
+[tool.setuptools.dynamic]
+# version = { attr = "ipf.__version__" }
+readme = { file = [ "README.md" ] }
+
+[tool.setuptools_scm]
+version_file = "ipf/_version.py"
+version_scheme = "guess-next-dev"  # this is the default
+local_scheme = "no-local-version"  # local version component not allowed on pypi

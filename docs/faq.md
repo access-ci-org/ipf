@@ -12,28 +12,40 @@ bash ~/ipf/bin/wfm status
 
 
 ## How do I upgrade to the latest version?
-1. Re-run the installer
-   * ```bash
-     bash ~/install_ipf.sh
-     ```
+See section "How can I start over from scratch" (below)
 
 
-## I messed up the install. Can I start over from scratch?
-Yes!
+## How can I start over from scratch?
 1. Stop any running workflows
    * ```bash
      bash ~/ipf/bin/wfm stop
      ```
-1. Make backups of any config files
+
+1. Backup config files
    * ```bash
      bash ~/ipf/bin/save_configs.sh
      ```
-1. Remove the install directory and installer
-   * ```bash
-     rm -rf ~/ipf install_ipf.sh
-     ```
-1. Follow through the QUICKSTART guide again starting from the top
 
+1. Remove the install directory and script
+   * ```bash
+     rm -rf ~/ipf ~/ipf-setup.sh
+     ```
+
+1. Follow the [Installation Guide](install.md) again starting from the top
+
+1. The backed up config files will have been restored. Generate the workflow
+   files
+   * ```bash
+     bash ~/ipf/bin/configure_extmodules
+     ```
+
+1.  Start the workflows
+   * ```bash
+     ~/ipf/bin/wfm start
+     ```
+
+1. Check the published data
+See steps in [Configure Software Modules Publishing](configure-extmodules-workflow.md)
 
 
 ## Can I configure multiple workflows of the same type?
@@ -51,5 +63,6 @@ that `RESOURCE_NAME` is unique in each config file.
 This will do 2 things:
 * make backup copies in `~/.config/ipf/`
 * create symlinks to the backup copies in the ipf install dir.
+
 On a re-install, the IPF installer will look for any backed up
 config files and re-make the symlnks.

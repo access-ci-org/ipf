@@ -1,9 +1,4 @@
-# access-ci-org/ipf %VER%-%REL%
-=====================
-
-
 # Software Module Publishing Best Practices
------------------------------------------
 
 
 The IPF Software Module workflow publishes information about locally
@@ -24,12 +19,12 @@ If you are not using Lmod, or do not wish to use lmod cache files, the
 workflow will fall back to the traditional method of walking the MODULEPATH.
 The workflow then traverses your MODULEPATH and infers fields such
 as Name and Version from the directory structure/naming conventions of
-the module file layout. The new IPF default behavior is to treat each 
+the module file layout. IPF default behavior is to treat each 
 directory in your MODULEPATH as a top level directory, under which all of
 the subdirectory structure is semantically significant (and part of the
-inferred name of the module).  The old default behavior, if desired, can be
+inferred name of the module).  An alternative behavior, if desired, can be
 enabled with by configuring the extmodules workflow with the --modules_recurse
-argument.
+argument. (TODO: Define the alternative behavior?)
 
 Depending on the exact workflow steps, fields such as Description may be 
 blank, or inferred from the stdout/stderr text of the module. However, the 
@@ -48,6 +43,3 @@ following fields can always be explicitly added to a module file:
 Each field is a key: value pair. The IPF workflows are searching the
 whole text of each module file for these fields. They may be placed in a
 module-whatis line, or in a comment, and IPF will still read them.
-
-More details about the contents of these fields can be found in the more
-comprehensive INSTALL.md documentation.

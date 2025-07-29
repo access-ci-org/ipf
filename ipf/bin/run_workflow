@@ -2,7 +2,7 @@
 
 INSTALL_DIR=___INSTALL_DIR___
 PYTHON="$INSTALL_DIR"/.venv/bin/python
-PYTHONPATH=$(readlink -e "$INSTALL_DIR"/..)
+# PYTHONPATH=$(readlink -e "$INSTALL_DIR"/..)
 WORKFLOW_BASE="$INSTALL_DIR"/etc/ipf/workflow
 
 WORKFLOW="$1"
@@ -12,5 +12,5 @@ WORKFLOW_FULL_PATH="$WORKFLOW_BASE"/"$WORKFLOW"
   exit 1
 }
 
-export PYTHONPATH
-$PYTHON "$INSTALL_DIR"/run_workflow.py -d "$WORKFLOW"
+# export PYTHONPATH
+$PYTHON -m ipf.run_workflow -d "$WORKFLOW"

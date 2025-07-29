@@ -1,32 +1,16 @@
-# Install from git
-
-1. Get installer
-   * ```bash
-     curl -o ~/install_ipf.sh https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads/master/go.sh
-     ```
-
-1. Run installer
-   * ```bash
-     bash ~/install_ipf.sh
-     ```
-   * Note: IPF will be installed into the current directory. All commands in
-     this guide assume the current directory is `~/`.
-
-1. Do first time setup
-   * ```bash
-     bash ~/ipf/bin/prep.sh
-     ```
-     
 # Setup the extmodules workflow
 ## Configure the extmodules workflow
 1. Set variables for your site (for upgrade or re-install, skip this step)
    * ```bash
-     cp ~/ipf/etc/configure_extmodules.conf.sample ~/ipf/etc/configure_extmodules.conf
+     cp -n ~/ipf/etc/configure_extmodules.conf.sample ~/ipf/etc/configure_extmodules.conf
      vim ~/ipf/etc/configure_extmodules.conf
-     cp ~/ipf/etc/amqp.conf.sample ~/ipf/etc/amqp.conf
+     cp -n ~/ipf/etc/amqp.conf.sample ~/ipf/etc/amqp.conf
      vim ~/ipf/etc/amqp.conf
      ```
    * Note: for initial testing, leave the PUBLISH variable empty.
+   * Note: if publishing for multiple resources, make one conf file per
+     resource. The filenames must match the glob `configure_extmodules*.conf`
+
 1. Run the configure script
    * ```bash
      bash ~/ipf/bin/configure_extmodules
@@ -64,19 +48,18 @@
    * Look for the resource name at: https://operations-api.access-ci.org/wh2/state/v1/status/
    * The date in the `Processed at` column should be recent.
 
+At this point, the publishing runs will continue running and reporting once
+a day until stopped manually or the system is rebooted.
+
+## Backup the workflow config files
+```bash
+bash ~/ipf/bin/save_configs.sh
+```
+
 # Setup recurring runs for production
+
 1. Create a scheduled task to restart the workflows after a system restart.
    * Example crontab:
      ```bash
         @restart $HOME/ipf/bin/wfm start
      ```
-
-
-# Errata
-
-## Notes
-- This install method currently supports only the `extmodules` workflow.
-  Other workflows will be added in the future.
-
-## See also
-- [Install from github FAQ](install-from-github-FAQ.md)
