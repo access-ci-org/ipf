@@ -3,7 +3,9 @@
 .DS_Store
 build/
 dist/
-ipf.egg-info/
+eggs/
+*.egg*
 *.swp
-_version.py
 *.old
+venv
+_version.py
