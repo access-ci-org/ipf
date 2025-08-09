@@ -7,17 +7,17 @@ def mk_version( version ):
         'dev': '{distance}',
         'n': '{node}',
         'nd': '{node_date}',
-        'T': '{time}',
-       'TS': int(time.time()),
+        't': '{time}',
+        'T': int(time.time()),
         }
     parts = [
         # 'b',
         # 'd',
-        'dev',
+          'dev',
         # 'n',
         # 'nd',
-        # 'T',
-        'TS',
+        # 't',
+          'T',
         ]
     # fmt_str = '{guessed}b{distance}'
     final = 'unknown'
