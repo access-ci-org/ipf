@@ -41,10 +41,10 @@ ipf_workflow = "ipf.run_workflow:main"
 ipf_configure = "ipf.configure.configure_workflows:configure"
 
 [tool.setuptools.dynamic]
-# version = { attr = "ipf.__version__" }
 readme = { file = [ "README.md" ] }
 
 [tool.setuptools_scm]
 version_file = "ipf/_version.py"
-version_scheme = "guess-next-dev"  # this is the default
+# version_scheme = "guess-next-dev"  # this is the default
+version_scheme = "ipf.build_helper:mk_version"
 local_scheme = "no-local-version"  # local version component not allowed on pypi

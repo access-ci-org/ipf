@@ -18,6 +18,7 @@ build:
 	python3 -m build
 
 pkg_deps: ${SITEPKGS}/build ${SITEPKGS}/setuptools_scm
+
 ${SITEPKGS}/build:
 	python3 -m pip install --upgrade build
 
