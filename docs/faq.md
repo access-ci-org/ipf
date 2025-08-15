@@ -39,13 +39,12 @@ See section "How can I start over from scratch" (below)
      bash ~/ipf/bin/configure_extmodules
      ```
 
-1.  Start the workflows
+1. Start the workflows
    * ```bash
      ~/ipf/bin/wfm start
      ```
-
 1. Check the published data
-See steps in [Configure Software Modules Publishing](configure-extmodules-workflow.md)
+   * See steps in [Configure Software Modules Publishing](configure-extmodules-workflow.md)
 
 
 ## Can I configure multiple workflows of the same type?

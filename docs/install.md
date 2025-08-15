@@ -1,7 +1,7 @@
 # Install
 1. Get the setup script
     ```
-    curl -o ~/ipf-setup.sh https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads/master/fix_version/setup.sh
+    curl -o ~/ipf-setup.sh https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads/master/setup.sh
     ```
 
 1. Run the setup script
