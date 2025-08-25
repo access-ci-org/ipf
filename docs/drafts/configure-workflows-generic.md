@@ -1,14 +1,7 @@
-# access-ci-org/ipf %VER%-%REL%
-=====================
-
-## Configuring IPF
----------------
-
+# Configuring IPF
 
 To make configuration easier, an `ipf_configure` script is
-provided in the bin directory (in /usr/bin if you installed RPMs,
-otherwise in $INSTALL_DIR/ipf-VERSION/ipf/bin). This script will 
-generate workflow definition files and example init files. 
+provided in the bin directory (~/bin/ipf_configure).
 
 
 If you intend to publish software module information via the extmodules 
@@ -21,18 +14,14 @@ As of IPF v 1.7, ipf_configure accepts command line parameters
 to tell it which workflows to configure, and with which options.
 
 
-An invocation of ipf_configure on a resource that has installed 
-IPF using RPM and wants to publish software information might look like:
+An invocation of ipf_configure on a resource that wants to publish software
+information might look like:
 
-
-/usr/bin/ipf_configure --rpm --resource_name <RESOURCE_NAME> --workflows=extmodules --publish --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  --modulepath /path/to/modules --lmod_cache_file /path/to/lmodcache.lua
-
+```
+/usr/bin/ipf_configure --resource_name <RESOURCE_NAME> --workflows=extmodules --publish --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  --modulepath /path/to/modules --lmod_cache_file /path/to/lmodcache.lua
+```
 
 These options mean:
-
-- `--rpm`
-  - IPF was installed using RPM; this lets us know where files should be on disk
-
 - `--resource_name`
   - The name of your resource. To find your resource name, go to "https://operations.access-ci.org/resources/access-allocated" to find your resource, and use the "Global Resource ID" value.
 
@@ -64,9 +53,6 @@ Other common options:
 - `--amqp_username`
 - `--amqp_password`
   - If not using certificates to authenticate, use these to specify username and password
-
-- `--pip`
-  - IPF was installed using “pip install”
 
 For a full list of command line options, please try
 ```
@@ -115,17 +101,3 @@ started, and stopped in the usual ways. You may need to perform a
     output of 'openssl x509 -in path/to/cert.pem -nameopt RFC2253
     -subject -noout' in your ticket. If you will authenticate via
     username and password, state that and someone will contact you.
-
-
-- (RPM install only) The `xdinfo` user as created by the ipf RPM installation has
-/bin/nologin set as its shell by default. This is because for most
-purposes, the `xdinfo` user doesn't need an interactive shell. However,
-for some of the initial setup, it is easiest to use the `xdinfo` user with
-an interactive shell (so that certain environment variables like
-MODULEPATH can be discovered.) Thus, it is recommended that the
-configuration steps are run after something like the following:
-```
-sudo -u xdinfo -s /bin/bash --rcfile /etc/bashrc -i
-echo $MODULEPATH
-echo $SERVICEPATH
-```

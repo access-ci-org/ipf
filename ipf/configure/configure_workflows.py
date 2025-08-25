@@ -45,10 +45,6 @@ def parseargs():
                         help='Set the latitude')
     parser.add_argument('--longitude', \
                         help='Set the longitude')
-    parser.add_argument('--rpm', action='store_true', \
-                        help='IPF was installed from RPM')
-    parser.add_argument('--pip', action='store_true', \
-                        help='IPF was installed using pip')
     parser.add_argument('--base_dir', \
                         help='Set the base directory')
     parser.add_argument('--scheduler', \
@@ -904,12 +900,10 @@ def setBaseDir(args):
     if args.base_dir:
        _base_dir = args.base_dir 
        return _base_dir
-    if args.rpm:
-       _base_dir = "/"
-    elif args.pip:
-        _base_dir = os.path.join(sysconfig.get_paths()["purelib"], "ipf")
     else:
-        print('\nNo base directory specified.  Please do one of the following:\n     *if you installed IPF from an RPM, specify the "--rpm" command line option.\n     *if you installed using pip, specify the "--pip" command line option.\n     *otherwise, use the "--base_dir <path>" command line option where <path> is the root of where you installed IPF.\n')
+        _base_dir = os.path.join(sysconfig.get_paths()["purelib"], "ipf")
+    if _base_dir is None:
+        print('\nError: "ipf" not found in python libraries.')
         raise SystemExit
 
     return _base_dir
