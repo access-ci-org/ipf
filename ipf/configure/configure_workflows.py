@@ -34,7 +34,7 @@ def parseargs():
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--resource_name', \
-                        help='Set the resource name')
+                        help='Set the resource name. (Required)')
     parser.add_argument('--organization_name', \
                         help='Set the organization name')
     parser.add_argument('--city', \
@@ -139,8 +139,6 @@ def configure():
 
 #######################################################################################################################
 
-# need to test this with an xdresourceid program
-
 def configure_compute_workflow(resource_name,args,template_json):
     if args.scheduler:
         sched_name = args.scheduler
@@ -228,7 +226,7 @@ def getResourceName(template_json):
                     resource_name = step_json["params"]["resource_name"]
             return resource_name
     else:
-        print('\nNo resource name specified.  You must do one of:\n     * make sure xdresourceid is in your path\n     *use the command line option "--resource_name <name>"\n     *specify a template file that defines the resource name, using --workflowtemplate <file.json>')
+        print('\nNo resource name specified.  You must do one of:\n     *use the command line option "--resource_name <name>"\n     *specify a template file that defines the resource name, using --workflowtemplate <file.json>')
         raise SystemExit
     return
 

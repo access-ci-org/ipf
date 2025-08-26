@@ -1,3 +1,8 @@
+for 1.9.3
+* CTT-673 Remove xdresourceid references (#3)
+* CTT-622 Remove references to "rpm"
+* CTT-661/unique dev version string (#24)
+
 for 1.9.0
 * Pip is now the only supported install method
 * Simplified install to a handful of copy-n-paste instructions

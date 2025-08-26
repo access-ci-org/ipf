@@ -27,18 +27,13 @@ from ipf.error import StepError
 class ResourceNameStep(ipf.sysinfo.ResourceNameStep):
     def __init__(self):
         ipf.sysinfo.ResourceNameStep.__init__(self)
-        self.description = "produces a resource name document using xdresourceid"
-        self._acceptParameter("xdresourceid","path to the xdresourceid program (default 'xdresourceid')",False)
+        self.description = "produces a resource name document"
 
     def run(self):
         try:
             resource_name = self.params["resource_name"]
         except KeyError:
-            xdresourceid = self.params.get("xdresourceid","xdresourceid")
-            (status, output) = subprocess.getstatusoutput(xdresourceid)
-            if status != 0:
-                raise StepError("failed to execute %s: %s" % (xdresourceid,output))
-            resource_name = output
+            raise StepError('resource_name not found')
 
         self._output(ipf.sysinfo.ResourceName(resource_name))
     
@@ -49,18 +44,13 @@ class SiteNameStep(ipf.sysinfo.SiteNameStep):
     def __init__(self):
         ipf.sysinfo.SiteNameStep.__init__(self)
 
-        self.description = "produces a site name document using xdresourceid"
-        self._acceptParameter("xdresourceid","path to the xdresourceid program (default 'xdresourceid')",False)
+        self.description = "produces a site name document"
 
     def run(self):
         try:
             site_name = self.params["site_name"]
         except KeyError:
-            xdresourceid = self.params.get("xdresourceid","xdresourceid")
-            (status, output) = subprocess.getstatusoutput(xdresourceid+" -s")
-            if status != 0:
-                raise StepError("failed to execute %s: %s" % (xdresourceid,output))
-            site_name = output
+            raise StepError('site_name not found')
 
         self._output(ipf.sysinfo.SiteName(site_name))
 
