@@ -14,10 +14,10 @@ dependencies = [
 ]
 dynamic = [
   "version",
+  "readme",
 ]
 description = "The Information Publishing Framework"
 license-files = ["LICEN[CS]E*"]
-readme = "README.md"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Programming Language :: Python :: 3",
@@ -37,6 +37,9 @@ authors = [
 
 [project.urls]
 Repository = "https://github.com/access-ci-org/ipf"
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md"]}
 
 [tool.setuptools_scm]
 version_file = "ipf/_version.py"
