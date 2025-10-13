@@ -39,7 +39,7 @@ authors = [
 Repository = "https://github.com/access-ci-org/ipf"
 
 [tool.setuptools.dynamic]
-readme = {file = ["README.md"], content-type = "text/markdown"}
+readme = {file = ["README.pypi"], content-type = "text/markdown"}
 
 [tool.setuptools_scm]
 version_file = "ipf/_version.py"
