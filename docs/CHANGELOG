@@ -1,3 +1,6 @@
+for 1.9.4
+* CTT-676 README renders properly on pypi
+
 for 1.9.3
 * CTT-673 Remove xdresourceid references (#3)
 * CTT-622 Remove references to "rpm"
