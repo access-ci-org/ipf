@@ -6,11 +6,23 @@ build-backend = "setuptools.build_meta:__legacy__"
 
 [project]
 name = "ipf"
+requires-python = ">=3.6"
+dependencies = [
+  "amqp >=1.4",
+  "lupa",
+  "python-dateutil",
+]
 dynamic = [
   "version",
   "readme",
 ]
-description = "The Information Publishing Framework"
+description = "ACCESS Information Publishing Framework"
+license-files = ["LICEN[CS]E*"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Programming Language :: Python :: 3",
+  "Topic :: System :: Monitoring",
+]
 keywords = [
   "monitoring",
   "information",
@@ -22,24 +34,12 @@ authors = [
   {name = "Eric Blau", email = "blau@globus.org"},
   {name = "Warren Smith"},
 ]
-requires-python = ">=3.6"
-license-files = ["LICEN[CS]E*"]
-classifiers = [
-  "Development Status :: 5 - Production/Stable",
-  "Programming Language :: Python :: 3",
-  "Topic :: System :: Monitoring",
-]
-dependencies = [
-  "amqp >=1.4",
-  "lupa",
-  "python-dateutil",
-]
 
 [project.urls]
 Repository = "https://github.com/access-ci-org/ipf"
 
 [tool.setuptools.dynamic]
-readme = { file = [ "README.md" ] }
+readme = {file = ["README.pypi"], content-type = "text/markdown"}
 
 [tool.setuptools_scm]
 version_file = "ipf/_version.py"
