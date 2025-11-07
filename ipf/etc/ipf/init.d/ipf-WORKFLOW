@@ -7,93 +7,205 @@
 # processname: ipf_workflow
 
 INSTALL_DIR=___INSTALL_DIR___
-PROGRAM="$INSTALL_DIR"/bin/run_workflow
+. ${INSTALL_DIR}/lib/utils.sh
 
+##########################
+# Vars set by configure.py
+#
 export IPF_ETC_PATH=
 export IPF_VAR_PATH=
+WORKFLOW_NAME=
+WORKFLOW_CFG=glue2/${WORKFLOW_NAME}.json
+WORKFLOW_DIR=
+INIT_FILE=
+RES_NAME=
+#
+# Add any environment variables setup needed for this workflow here #
+#
+# End of ...
+# Vars set by configure.py
+##########################
 
-NAME=
-PID_FILE=${IPF_VAR_PATH}/${NAME}.pid
-WORKFLOW=glue2/${NAME}.json
+# Vars used by this init script
+PROGRAM="$INSTALL_DIR"/bin/run_workflow
+PYTHON="$INSTALL_DIR"/bin/python
+PID_VAL=
+PID_HOST=
+PID_EXISTS=${NO}
+THIS_HOST=
+IS_RUNNING=${NO}
+IS_LOCAL=${NO}
+OK_TO_START=${NO}
+STATUS_REASON="?"
+PID_FILE=${IPF_VAR_PATH}/${WORKFLOW_NAME}.pid
+LOG_FILE=${IPF_VAR_PATH}/${WORKFLOW_NAME}.log
 
 
-###################################################################
-##### Add any environment variables setup needed for this workflow here #####
-###################################################################
-
-
-
-is_running() {
-  if [ -f $PID_FILE ]; then
-    PID=`cat $PID_FILE`
-    if [ -z "`ps axf | grep ${PID} | grep -v grep`" ]; then
-      # Process dead but pidfile exists
-      RETVAL=2
-    else
-      # process from PID_FILE is running
-      RETVAL=0
-    fi
-  else
-    # Service not running
-    RETVAL=1
-  fi
-  return $RETVAL
+get_host_info() {
+  # Get the same host info as Python
+  THIS_HOST=$( "${PYTHON}" -c 'import os; print(os.uname().nodename)' )
+  [[ -z "${THIS_HOST}" ]] && die "Error getting local hostname"
 }
 
 
-rm_pid_file() {
-  rm -f "$PID_FILE"
+get_pid_details() {
+  if [[ -f "${PID_FILE}" ]]; then
+    PID_EXISTS=${YES}
+    for varname in PID_VAL PID_HOST; do
+      IFS= read -r "${varname}" || break
+    done <"${PID_FILE}"
+    [[ -z "${PID_VAL}" ]] && die "Error getting pid from pidfile '${PID_FILE}'"
+    [[ -z "${PID_HOST}" ]] && die "Error getting pid host from pidfile '${PID_FILE}'"
+  fi
+}
+
+
+get_status() {
+  local _chk_pid_stderr
+  local _pid_alive
+  get_pid_details
+  if ! pid_exists ; then
+    STATUS_REASON="not running"
+    IS_RUNNING=${NO}
+    OK_TO_START=${YES}
+  elif [[ "${PID_HOST}" != "${THIS_HOST}" ]] ; then
+    STATUS_REASON="started on node ${PID_HOST}"
+    IS_RUNNING=${YES}
+    OK_TO_START=${NO}
+    IS_LOCAL=${NO}
+  else
+    IS_LOCAL=${YES}
+    # was previously started on this host so can check if pid active
+    _chk_pid_stderr=$( kill -0 ${PID_VAL} 2>&1 )
+    _pid_alive=$?
+    if [[ ${_pid_alive} -eq 0 ]] ; then
+      STATUS_REASON="actively running on this host"
+      IS_RUNNING=${YES}
+      OK_TO_START=${NO}
+    else
+      # pid check was negative, check for reason
+      if [[ ${_chk_pid_stderr} == *"No such process"* ]] ; then
+        STATUS_REASON="not running but pid file exists"
+        IS_RUNNING=${NO}
+        OK_TO_START=${YES}
+      else
+        die "Got error '${_chk_pid_stderr}' checking pid status"
+      fi
+    fi
+  fi
+}
+
+
+get_workflow_outfile() {
+  local _outfile _fntail
+  case "${WORKFLOW_NAME}" in
+    *"extmodules"*) _fntail="extended_modules.json";;
+    *) "?";;
+  esac
+  _outfile=$( ls "${IPF_VAR_PATH}"/"${RES_NAME}"_"${_fntail}" )
+  [[ -z "${_outfile}" ]] && _outfile="?"
+  echo "${_outfile}"
+}
+
+
+pid_exists() {
+  return ${PID_EXISTS}
+}
+
+is_running() {
+  return ${IS_RUNNING}
+}
+
+is_local() {
+  return ${IS_LOCAL}
+}
+
+ok_to_start() {
+  return ${OK_TO_START}
 }
 
 
 start() {
-  RETVAL=0
-  echo -n "Starting IPF workflow ${NAME}: "
+  local _retval
   if is_running ; then
-    echo "IPF workflow is already running"
-    RETVAL=1
+    echo "IPF workflow '${WORKFLOW_NAME}' already running: ${STATUS_REASON}"
+    _retval=${SUCCESS}
+  elif ok_to_start ; then
+    echo -n "Starting IPF workflow ${WORKFLOW_NAME}: "
+    /bin/bash "${PROGRAM}" "${WORKFLOW_CFG}"
+    _retval=$?
+    if [[ $_retval == 0 ]] ; then
+      success 'OK'
+      _retval=${SUCCESS}
+    else
+      err "exited with '$_retval'"
+      _retval=${FAIL}
+    fi
   else
-    /bin/bash "$PROGRAM" "$WORKFLOW"
-    RETVAL=$?
-    echo
+    echo "No attempt to start IPF workflow ${WORKFLOW_NAME} ${STATUS_REASON}"
+    _retval=${FAIL}
   fi
-  return $RETVAL
+  return $_retval
 }
 
 
 stop() {
-  RETVAL=0
-  echo -n "Shutting down IPF workflow ${NAME}: "
-  if is_running ; then
-    PID=`cat $PID_FILE`
-    pkill -9 -P $PID
-    RETVAL=$?
-    if [ $RETVAL -eq 0 ] ; then
-      echo "Stopped"
-      rm_pid_file
+  local _retval
+  echo -n "Shutting down IPF workflow ${WORKFLOW_NAME}: "
+  if is_running && is_local ; then
+    # try to stop
+    pkill -P ${PID_VAL}
+    sleep 2
+    get_status
+    if is_running ; then 
+      pkill -9 -P ${PID_VAL}
+      sleep 3
+      get_status
+    fi
+    if is_running ; then
+      err "Failed to stop pid '${PID_VAL}'"
+      _retval=${FAIL}
     else
-      echo "Failed to stop process with pid: '$PID'"
+      success "Stopped"
+      _retval=${SUCCESS}
+      rm_pid_file
     fi
   else
-    echo "Service not running"
+    echo "Nope, ${STATUS_REASON}"
+    _retval=${FAIL}
   fi
-  return $RETVAL
+  return $_retval
 }
 
 
 status() {
-  echo -n "Checking status of IPF workflow ${NAME}: "
-  if is_running ; then
-    echo "Service is running"
-  elif [[ $RETVAL == 1 ]] ; then
-    echo "Service not running"
-  elif [[ $RETVAL == 2 ]] ; then
-    echo "Process dead but pidfile exists"
-  else
-    echo "Error checking status"
-  fi
-  return $RETVAL
+  echo "Status of IPF workflow ${WORKFLOW_NAME}: ${STATUS_REASON}"
 }
+
+
+rm_pid_file() {
+  rm -f "${PID_FILE}"
+}
+
+
+list_files() {
+  local _outfile
+  _outfile=$( get_workflow_outfile )
+  echo "WORKFLOW: ${WORKFLOW_NAME}"
+  echo "  CONFIG: ${WORKFLOW_DIR}/${WORKFLOW_CFG}"
+  echo "  OUTPUT: ${_outfile}"
+  echo "    INIT: ${INIT_FILE}"
+  echo "     LOG: ${LOG_FILE}"
+  echo "     PID: ${PID_FILE}"
+}
+
+
+###
+# MAIN
+###
+
+get_host_info
+get_status
 
 case "$1" in
   start)
@@ -106,11 +218,13 @@ case "$1" in
     status
     ;;
   restart)
-    stop
-    start
+    stop && start
+    ;;
+  ls)
+    list_files
     ;;
   *)
-    echo "Usage: $prog {start|stop|status|restart}"
+    echo "Usage: $prog {start|stop|restat|status|ls}"
     exit 1
     ;;
 esac

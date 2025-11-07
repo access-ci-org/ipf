@@ -27,6 +27,7 @@ import urllib.parse
 import time
 import sysconfig
 import argparse
+import pathlib
 
 ###############################################################################
 
@@ -45,11 +46,12 @@ def parseargs():
                         help='Set the latitude')
     parser.add_argument('--longitude', \
                         help='Set the longitude')
+    #TODO - probably need to deprecate this if switch to using paths.py
     parser.add_argument('--base_dir', \
                         help='Set the base directory')
     parser.add_argument('--scheduler', \
                         help='set the scheduler name')
-    parser.add_argument('-scheduler_params', action='store', \
+    parser.add_argument('--scheduler_params', action='store', \
                         help='comma delimited key:value pairs for parameters for your scheduler')
     parser.add_argument('--amqp_username', \
                         #action='store_const',const='username', dest='mode',\
@@ -76,7 +78,7 @@ def parseargs():
     parser.add_argument('--modules', \
                         help='Any modules that need to be loaded in the init scripts for workflows')
     parser.add_argument('--environment', \
-                        help='Any environment variables that needs to be loaded in the init scripts for workflows, such as \n * batch scheduler commands that need to be in PATH \n * scheduler-related environment variables may need to be set')
+                        help='Any environment variables that need to be loaded in the init scripts for workflows, such as \n * batch scheduler commands that need to be in PATH \n * scheduler-related environment variables may need to be set')
     parser.add_argument('--pbs_log_dir', \
                         help='The full path PBS log dir')
     parser.add_argument('--sge_reporting_log', \
@@ -114,6 +116,7 @@ def configure():
     else:
         resource_name = getResourceName(template_json)
 
+    #TODO deprecate in favor of paths.py
     setBaseDir(args)
    
     if args.workflows: 
@@ -767,6 +770,7 @@ def writeComputeInit(resource_name, module_names, env_vars):
     if os.path.isfile(path):
         os.rename(path, path+".backup-" +
                   time.strftime('%Y-%M-%d-%X', time.localtime()))
+    #TODO why does "name" have a newline?
     name = "%s_compute_periodic\n" % res_name
     writeInit(resource_name, module_names, env_vars, name, path)
 
@@ -778,6 +782,7 @@ def writeActivityInit(resource_name, module_names, env_vars):
     if os.path.isfile(path):
         os.rename(path, path+".backup-" +
                   time.strftime('%Y-%M-%d-%X', time.localtime()))
+    #TODO why does "name" have a newline?
     name = "%s_activity\n" % res_name
     writeInit(resource_name, module_names, env_vars, name, path)
 
@@ -789,6 +794,7 @@ def writeModulesInit(resource_name, module_names, env_vars):
     if os.path.isfile(path):
         os.rename(path, path+".backup-" +
                   time.strftime('%Y-%M-%d-%X', time.localtime()))
+    #TODO why does "name" have a newline?
     name = "%s_modules_periodic\n" % res_name
     writeInit(resource_name, module_names, env_vars, name, path)
 
@@ -800,6 +806,7 @@ def writeExtModulesInit(resource_name, module_names, env_vars):
     if os.path.isfile(path):
         os.rename(path, path+".backup-" +
                   time.strftime('%Y-%M-%d-%X', time.localtime()))
+    #TODO why does "name" have a newline?
     name = "%s_extmodules_periodic\n" % res_name
     writeInit(resource_name, module_names, env_vars, name, path)
 
@@ -811,56 +818,69 @@ def writeAbstractServicesInit(resource_name, module_names, env_vars):
     if os.path.isfile(path):
         os.rename(path, path+".backup-" +
                   time.strftime('%Y-%M-%d-%X', time.localtime()))
+    #TODO why does "name" have a newline?
     name = "%s_services_periodic\n" % res_name
     writeInit(resource_name, module_names, env_vars, name, path)
 
 
 def writeIPFInfoInit(resource_name, module_names, env_vars):
-    res_name = resource_name.split(".")[0]
+    #res_name = resource_name.split(".")[0]
     path = os.path.join(getBaseDir(), "etc", "ipf", "init.d", "ipfinfo")
     if os.path.isfile(path):
         os.rename(path, path+".backup-" +
                   time.strftime('%Y-%M-%d-%X', time.localtime()))
+    #TODO why does "name" have a newline?
     name = "ipfinfo_publish_periodic\n"
     writeInit(resource_name, module_names, env_vars, name, path)
 
 
 def writeInit(resource_name, module_names, env_vars, name, path):
     res_name = resource_name.split(".")[0]
-
-    in_file = open(os.path.join(getBaseDir(), "etc",
-                                "ipf", "init.d", "ipf-WORKFLOW"), "r")
-    out_file = open(path, "w")
-    for line in in_file:
-        if line.startswith("NAME="):
-            out_file.write("NAME=%s\n" % name)
-        elif line.startswith("WORKFLOW="):
-            if name == "ipf_publish_periodic\n":
-                out_file.write("WORKFLOW=${NAME}.json\n")
+    # why are these hardcoded?
+    # TODO better to get them from paths.py
+    ipf_etc_path = pathlib.Path( getBaseDir(), 'etc', 'ipf' )
+    ipf_var_path = pathlib.Path( getBaseDir(), 'var', 'ipf' )
+    template_file = pathlib.Path(
+        getBaseDir(), 'etc', 'ipf', 'init.d', 'ipf-WORKFLOW' )
+    # in_file = open(os.path.join(getBaseDir(), "etc",
+    #                             "ipf", "init.d", "ipf-WORKFLOW"), "r")
+    init_file = pathlib.Path( path )
+    #out_file = open(path, "w")
+    with template_file.open() as infile, init_file.open('w') as outfile:
+        for line in infile:
+            if line.startswith("WORKFLOW_NAME="):
+                #TODO name has a newline in it, if that's removed, add one here
+                outfile.write( f"WORKFLOW_NAME={name}" )
+            # TODO what's the deal with a newline at end of string to match?
+            elif line.startswith("WORKFLOW_CFG=") and name == "ipf_publish_periodic\n":
+                    outfile.write("WORKFLOW_CFG=${NAME}.json\n")
+            elif line.startswith( "WORKFLOW_DIR=" ):
+                outfile.write( f"WORKFLOW_DIR={getWorkflowDir()}\n" )
+            elif line.startswith( "RES_NAME=" ):
+                outfile.write( f"RES_NAME={res_name}\n" )
+            elif line.startswith( "INIT_FILE=" ):
+                outfile.write( f"INIT_FILE={init_file}\n" )
+            # still needed?
+            # elif line.startswith("IPF_USER="):
+            #     outfile.write("IPF_USER=%s\n" % getpass.getuser())
+            elif line.startswith("export IPF_ETC_PATH="):
+                outfile.write( f"export IPF_ETC_PATH={ipf_etc_path}\n" )
+            elif line.startswith("export IPF_VAR_PATH="):
+                outfile.write( f"export IPF_VAR_PATH={ipf_var_path}\n" )
+            elif "modules" in line and module_names != None:
+                outfile.write(line)
+                outfile.write("source %s\n" % os.path.join(
+                    os.environ["MODULESHOME"], "init", "bash"))
+                for module_name in module_names:
+                    outfile.write("module load %s\n" % module_name)
+            elif "environment variables" in line and len(env_vars) > 0:
+                outfile.write(line)
+                for name in env_vars:
+                    outfile.write("export %s=%s\n" % (name, env_vars[name]))
             else:
-                out_file.write(line)
-        elif line.startswith("IPF_USER="):
-            out_file.write("IPF_USER=%s\n" % getpass.getuser())
-        elif line.startswith("export IPF_ETC_PATH="):
-            out_file.write("export IPF_ETC_PATH=%s\n" %
-                           os.path.join(getBaseDir(), "etc/ipf"))
-        elif line.startswith("export IPF_VAR_PATH="):
-            out_file.write("export IPF_VAR_PATH=%s\n" %
-                           os.path.join(getBaseDir(), "var/ipf"))
-        elif "modules" in line and module_names != None:
-            out_file.write(line)
-            out_file.write("source %s\n" % os.path.join(
-                os.environ["MODULESHOME"], "init", "bash"))
-            for module_name in module_names:
-                out_file.write("module load %s\n" % module_name)
-        elif "environment variables" in line and len(env_vars) > 0:
-            out_file.write(line)
-            for name in env_vars:
-                out_file.write("export %s=%s\n" % (name, env_vars[name]))
-        else:
-            out_file.write(line)
-    in_file.close()
-    out_file.close()
+                outfile.write(line)
+    # in_file.close()
+    # out_file.close()
 
 #######################################################################################################################
 
@@ -881,18 +901,22 @@ def getWorkflowTemplateGlueDir():
     return os.path.join(getWorkflowTemplateDir(), "glue2")
 
 def getWorkflowDir():
+    #TODO replace hardcoded path with item from paths.py
     return os.path.join(getBaseDir(), "etc", "ipf", "workflow")
 
 
+# TODO Deprecate in favor of paths.py ?
 _base_dir = None
 
 
+# TODO Deprecate in favor of paths.py ?
 def getBaseDir():
     global _base_dir
     if _base_dir is not None:
         return _base_dir
     return _base_dir
 
+# TODO Deprecate in favor of paths.py ?
 def setBaseDir(args):
     global _base_dir
     if args.base_dir:

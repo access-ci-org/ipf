@@ -138,6 +138,9 @@ mk_symlinks() {
     [[ -L $d ]] || ln -s "$IPF_PATH"/$d
   done
   popd
+  pushd "$INSTALL_DIR"/bin
+  ln -s "${V_PYTHON}"
+  popd
 }
 
 

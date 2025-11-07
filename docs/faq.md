@@ -1,18 +1,22 @@
 # Frequently Asked Questions
 
-## What does `no pid file` mean when starting workflows?
-Not sure right now, but just check publishing status at
-https://operations-api.access-ci.org/wh2/state/v1/status/
-to see if the runs were published.
-
-Also, check local process status with
-```bash
-bash ~/ipf/bin/wfm status
-```
-
-
 ## How do I upgrade to the latest version?
-See section "How can I start over from scratch" (below)
+1. Run the install script again. The `pip` command will check for a newer
+   version and install it.
+   * ```bash
+     bash ~/ipf-setup.sh
+     ```
+1. Then re-run the configure scripts again.
+   * ```bash
+     bash ~/ipf/bin/configure_extmodules
+     ```
+Note: Any custom config files will be saved in `~/.config/ipf` and re-linked
+at the end, but you will have to re-run the configure workflows step (which
+uses the saved configs so no big deal).
+
+Note: Check the pip output to verify the new version is installed. If a newer
+version is available but it wasn't installed, see the section below: "Pip won't
+install the latest version of ipf?".
 
 
 ## How can I start over from scratch?
@@ -64,4 +68,18 @@ This will do 2 things:
 * create symlinks to the backup copies in the ipf install dir.
 
 On a re-install, the IPF installer will look for any backed up
-config files and re-make the symlnks.
+config files and re-make the symlinks.
+
+
+## Pip won't install the latest version of ipf?
+Two possible workarounds:
+* `rm -rf ~/ipf/`
+
+OR
+
+* `rm -rf /tmp/pip-build*`
+
+Then re-run the installer.
+
+See also:
+https://stackoverflow.com/questions/14617136/why-is-pip-installing-an-old-version-of-my-package

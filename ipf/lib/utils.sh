@@ -10,7 +10,7 @@ INSTALL_DIR=___INSTALL_DIR___
 ###
 
 err() {
-	echo -e "${RED}✗ ERROR: $*${NC}"
+  echo -e "${RED}✗ ERROR: $*${NC}"
 }
 
 success() {

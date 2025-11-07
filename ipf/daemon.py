@@ -19,6 +19,7 @@ import logging
 import os
 import sys
 import time
+import pathlib
 
 from ipf.paths import IPF_VAR_PATH
 
@@ -28,51 +29,72 @@ logger = logging.getLogger(__name__)
 
 class OneProcessOnly:
     def __init__(self, pidfile):
-        self.pid_file_name = pidfile
+        if ( pidfile is None or len(pidfile) < 1 ):
+            raise UserWarning( 'pidfile cannot be empty' )
+        self.pidfile = pathlib.Path( pidfile )
+        self.hostname = os.uname().nodename
 
     def start(self):
         if self._isRunning():
-            logger.error("process is already running at %s" % self.pid_file_name)
+            logger.error(f"process already running at {self.pidfile}")
             return
         self._writePid()
         self.run()
         self._removePid()
 
     def _isRunning(self):
-        if self.pid_file_name is None:
-            # no way to tell
-            False
-        try:
-            pid_file = open(self.pid_file_name,"r")
-            pid_str = pid_file.readline()
-            pid_file.close()
-            logger.debug("pid is "+pid_str)
-        except IOError:
-            logger.debug("no pid file")
-            return False
-
-        if (pid_str != None) and os.path.exists("/proc/"+pid_str):
-            # could check /proc/pid_str/cmdline and ...
-            logger.debug("found running daemon")
-            return True
-        logger.debug("no running daemon")
-        return False
+        # already validated pidfile in __init__
+        # if self.pid_file_name is None:
+        #     # no way to tell
+        #     False
+        retval = False
+        if self.pidfile.exists():
+            pid_val, pid_host = self.pidfile.read_text().splitlines()[:2]
+            # with self.pid_file_name.open() as pid_file:
+            #     pid_str = pid_file.readline().strip()
+            #     pid_host = pid_file.readline().strip()
+            # logger.debug(f"pid is {pid_val} on host {pid_host}")
+            # check validity of pid_host
+            if ( pid_host is None or len(pid_host) < 1 ):
+                raise UserWarning( f'Missing hostname in pid file {self.pidfile}' )
+            # check validity of pid_val
+            if ( pid_val is None or len(str(pid_val)) < 1 ):
+                raise UserWarning( f'Missing hostname in pid file {self.pidfile}' )
+            # check for host match
+            if ( pid_host != self.hostname ):
+                logger.debug( f'started on {pid_host}' )
+                retval = True
+            # process is local, check if running
+            # elif (pid_val is not None) and os.path.exists(f"/proc/{pid_val}"):
+            elif ( pathlib.Path( '/proc', pid_val ).exists() ):
+                # could check /proc/pid_str/cmdline and ...
+                logger.debug("found running daemon")
+                retval = True
+        else:
+            # logger.debug("pid file not found")
+            retval = False
+        return retval
 
     def _writePid(self):
-        if self.pid_file_name is None:
-            return
+        # already validated pidfile in __init__
+        # if self.pid_file_name is None:
+        #     return
         # save process id in the .pid file
-        pid_file = open(self.pid_file_name,"w")
-        pid_file.write(str(os.getpid()))
-        pid_file.close()
+        # pid_file = open(self.pid_file_name,"w")
+        # pid_file.write(str(os.getpid()))
+        # pid_file.write(str(self.hostname))
+        # pid_file.close()
+        self.pidfile.write_text( f'{os.getpid()}\n{self.hostname}' )
 
     def _removePid(self):
-        if self.pid_file_name is None:
-            return
-        try:
-            os.remove(self.pid_file_name)
-        except IOError:
-            logger.warning("failed to remove pid file %s" % self.pid_file_name)
+        # already validated pidfile in __init__
+        # if self.pid_file_name is None:
+        #     return
+        # try:
+        #     os.remove(self.pid_file_name)
+        # except IOError:
+        #     logger.warning("failed to remove pid file %s" % self.pidfile)
+        self.pidfile.unlink( missing_ok=True )
 
     def _redirect(self, stdin_file_name, stdout_file_name, stderr_file_name):
         sys.stdout.flush()
@@ -91,14 +113,14 @@ class OneProcessOnly:
 
 class OneProcessWithRedirect(OneProcessOnly):
     def __init__(self, pidfile=None, stdin="/dev/null", stdout="/dev/null", stderr="/dev/null"):
-        OneProcessOnly.__init__(self,pidfile)
+        super().__init__(pidfile)
         self.stdin = stdin
         self.stdout = stdout
         self.stderr = stderr
 
     def start(self):
         if self._isRunning():
-            logger.error("process is already running at %s" % self.pid_file_name)
+            logger.error(f"process already running at {self.pidfile}")
             return
         self._writePid()
         self._redirect(self.stdin,self.stdout,self.stderr)
@@ -112,7 +134,7 @@ class OneProcessWithRedirect(OneProcessOnly):
 
 class Daemon(OneProcessOnly):
     def __init__(self, pidfile=None, stdin="/dev/null", stdout="/dev/null", stderr="/dev/null"):
-        OneProcessOnly.__init__(self,pidfile)
+        super().__init__(pidfile)
         self.stdin = stdin
         self.stdout = stdout
         self.stderr = stderr
@@ -130,7 +152,7 @@ class Daemon(OneProcessOnly):
                 # exit first parent
                 sys.exit(0)
         except OSError as e:
-            logger.error("fork #1 failed: %d (%s)\n" % (e.errno, e.strerror))
+            logger.error( f"fork #1 failed: {e.errno} {e.strerror}\n" )
             sys.exit(1)
 
         # decouple from parent environment
@@ -145,7 +167,7 @@ class Daemon(OneProcessOnly):
                 # exit from second parent
                 sys.exit(0)
         except OSError as e:
-            logger.error("fork #2 failed: %d (%s)\n" % (e.errno, e.strerror))
+            logger.error( f"fork #2 failed: {e.errno} {e.strerror}\n" )
             sys.exit(1)
 
         self._redirect(self.stdin,self.stdout,self.stderr)
@@ -157,10 +179,10 @@ class Daemon(OneProcessOnly):
 
 class TestDaemon(Daemon):
     def __init__(self):
-        pidFile = os.path.join(IPF_VAR_PATH,"daemon_test.pid")
-        stdoutFile = os.path.join(IPF_VAR_PATH,"daemon_test.stdout")
-        stderrFile = os.path.join(IPF_VAR_PATH,"daemon_test.stderr")
-        Daemon.__init__(self,pidfile=pidFile,stdout=stdoutFile,stderr=stderrFile)
+        pidFile = pathlib.Path(IPF_VAR_PATH,"daemon_test.pid")
+        stdoutFile = pathlib.Path(IPF_VAR_PATH,"daemon_test.stdout")
+        stderrFile = pathlib.Path(IPF_VAR_PATH,"daemon_test.stderr")
+        super().__init__(pidfile=pidFile,stdout=stdoutFile,stderr=stderrFile)
 
     def run(self):
         for i in range(0,10):
