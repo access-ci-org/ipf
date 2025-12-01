@@ -12,21 +12,15 @@ INSTALL_DIR=___INSTALL_DIR___
 ##########################
 # Vars set by configure.py
 #
-export IPF_ETC_PATH=
-export IPF_VAR_PATH=
-WORKFLOW_NAME=
-WORKFLOW_CFG=glue2/${WORKFLOW_NAME}.json
-WORKFLOW_DIR=
-INIT_FILE=
-RES_NAME=
 #
-# Add any environment variables setup needed for this workflow here #
+___DATA_FROM_CONFIGURE.PY_HERE___
 #
 # End of ...
 # Vars set by configure.py
 ##########################
 
 # Vars used by this init script
+WORKFLOW_CFG=glue2/${WORKFLOW_NAME}.json
 PROGRAM="$INSTALL_DIR"/bin/run_workflow
 PYTHON="$INSTALL_DIR"/bin/python
 PID_VAL=
@@ -100,6 +94,7 @@ get_workflow_outfile() {
   local _outfile _fntail
   case "${WORKFLOW_NAME}" in
     *"extmodules"*) _fntail="extended_modules.json";;
+    *"compute"*) _fntail="compute.json";;
     *) "?";;
   esac
   _outfile=$( ls "${IPF_VAR_PATH}"/"${RES_NAME}"_"${_fntail}" )
@@ -220,11 +215,11 @@ case "$1" in
   restart)
     stop && start
     ;;
-  ls)
+  list)
     list_files
     ;;
   *)
-    echo "Usage: $prog {start|stop|restat|status|ls}"
+    echo "Usage: $prog {start|stop|restat|status|list}"
     exit 1
     ;;
 esac

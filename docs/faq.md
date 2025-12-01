@@ -6,13 +6,6 @@
    * ```bash
      bash ~/ipf-setup.sh
      ```
-1. Then re-run the configure scripts again.
-   * ```bash
-     bash ~/ipf/bin/configure_extmodules
-     ```
-Note: Any custom config files will be saved in `~/.config/ipf` and re-linked
-at the end, but you will have to re-run the configure workflows step (which
-uses the saved configs so no big deal).
 
 Note: Check the pip output to verify the new version is installed. If a newer
 version is available but it wasn't installed, see the section below: "Pip won't
@@ -83,3 +76,8 @@ Then re-run the installer.
 
 See also:
 https://stackoverflow.com/questions/14617136/why-is-pip-installing-an-old-version-of-my-package
+
+## What version if ipf is currently installed?
+```bash
+~/ipf/.venv/bin/pip freeze
+```

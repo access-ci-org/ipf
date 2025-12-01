@@ -82,6 +82,8 @@ mk_venv() {
 
 
 is_pre_release_allowed() {
+  # to install the latest pre-release version, do
+  # export IPF_ALLOW_PRE_RELEASE=yes
   [[ $DEBUG -eq $YES ]] && set -x
   local _retval=$NO
   if [[  "$IPF_ALLOW_PRE_RELEASE" == "yes" \

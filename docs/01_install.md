@@ -10,7 +10,7 @@
     ```
 Installs into `~/ipf`.
 
-Next: [Configure workflows](configure-extmodules-workflow.md)
+Next: [First time setup](02_configure-common.md)
 
 # Advanced
 
@@ -19,5 +19,6 @@ Next: [Configure workflows](configure-extmodules-workflow.md)
 ### Customize installation dir
 * Set and export environment variable IPF_INSTALL_DIR (before running
   `ipf-setup.sh`)
-Note: The default install dir is `~/ipf`. Remember to replace `~/ipf`
-with `$IPF_INSTALL_DIR` in all the commands referenced in the docs.
+Note: The default install dir is `~/ipf`.
+* Remember to replace `~/ipf` with `$IPF_INSTALL_DIR`
+in all the commands referenced in these docs.

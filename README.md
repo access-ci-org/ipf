@@ -8,11 +8,12 @@ IPF is a Python program that gathers resource information, formats it in a [GLUE
 ## Quickstart
 
 #### Install
-1. [Installation Guide](docs/install.md)
+1. [Installation Guide](docs/01_install.md)
 
 #### Configure Workflows
-1. [Configure Software Modules Publishing](docs/configure-extmodules-workflow.md)
-1. ( other workflows coming soon )
+1. [First time setup](docs/02_configure-common.md)
+1. [Configure Software Modules Publishing](docs/03_configure-extmodules-workflow.md)
+1. [Configure Queue and Job Publishing](docs/04_configure-compute-workflow.md)
 
 ## Additional Information
 

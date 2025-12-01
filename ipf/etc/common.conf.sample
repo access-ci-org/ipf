@@ -1,0 +1,30 @@
+###
+# GENERAL
+# Settings that are common across all workflows
+###
+
+### Runtime environment
+
+# Any environment variables that need to be loaded, such as:
+# * MODULEPATH
+# * SERVICEPATH
+# * batch scheduler commands that need to be in PATH
+# * scheduler-related environment variables may need to be set
+# (optional)
+# ENVIRONMENT=
+
+# Any modules that need to be loaded in the init scripts for
+# (optional)
+# MODULES=
+
+
+### WORKFLOW control
+
+# Set to 1 for publishing, leave unset for testing
+# PUBLISH=
+
+# Resource name is the Global Resource ID from
+# https://operations.access-ci.org/resources/access-allocated
+# Can be common across different workflow types, but must be unique for
+# multiple workflows of the same type.
+# RESOURCE_NAME=

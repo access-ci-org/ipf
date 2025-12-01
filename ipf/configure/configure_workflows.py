@@ -14,1010 +14,698 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
+# TODO - get amqp username / password from .netrc
+
+import argparse
 import copy
 import getpass
 import json
 import os
+import pathlib
+import pprint
 import socket
 import subprocess
+import sysconfig
+import textwrap
 import threading
-import urllib.request
+import time
 import urllib.error
 import urllib.parse
-import time
-import sysconfig
-import argparse
-import pathlib
+import urllib.request
+from ipf.paths import IPF_ETC_PATH, IPF_VAR_PATH
 
-###############################################################################
+# module level data
+resources = {}
+
+### Getter Functions
+def get_args( params=None ):
+    key = 'args'
+    try:
+        args = resources[key]
+    except KeyError:
+        args = parseargs()
+        resources[key] = args
+    return args
+
+
+def get_short_resource_name():
+    key = 'short_resource_name'
+    try:
+        val = resources[key]
+    except KeyError:
+        val = get_args().resource_name.split(".")[0]
+        resources[key] = val
+    return val
+
+
+def get_modules():
+    key = 'modules'
+    try:
+        val = resources[key]
+    except KeyError:
+        try:
+            args = get_args()
+            parts = args.modules.split(",")
+        except AttributeError:
+            val = ""
+        else:
+            init_file = pathlib.Path( os.environ['MODULESHOME'], 'init', 'bash' )
+            strings = [ f"source {init_file}" ]
+            strings.extend(
+                f"module load {module_name}" 
+                for module_name in parts
+            )
+            val = "\n".join( strings )
+        resources[key] = val
+    return val
+
+def get_environment_variables():
+    key = "environment_variables"
+    try:
+        val = resources[key]
+    except KeyError:
+        args = get_args()
+        data = {}
+        strings = []
+        if args.environment:
+            for _envvar in args.environment.split(","):
+                # ( name, value ) = _envvar.split("=")
+                # data[name] = value
+                strings.append( f"export {_envvar}" )
+        val = "\n".join( strings )
+        resources[key] = val
+    return val
+
+
+def getWorkflowDir():
+    return pathlib.Path( IPF_ETC_PATH, "workflow" )
+
+def getWorkflowGlueDir():
+    return getWorkflowDir() / "glue2"
+
+def getWorkflowTemplateGlueDir():
+    return getWorkflowDir() / "templates" / "glue2"
+
+
+def get_workflow_template():
+    args = get_args()
+    prefix = ""
+    # 20260212(aloftus) - remove support for "activity" workflow
+    # if args.workflow in [ 'compute', 'activity' ]:
+    if args.workflow == 'compute' :
+        # scheduler is part of filename for compute and activity workflows
+        prefix = f"{args.scheduler}_"
+    filename = f"{prefix}{args.workflow}.json"
+    path = getWorkflowTemplateGlueDir() / filename
+    return read_json_file( path )
+
+
+### Helper functions
+
+def read_json_file( path: pathlib.Path ) -> dict:
+    with path.open() as fh:
+        return json.load( fh )
+
+
+def write_json_file( path: pathlib.Path, data: dict ) -> None:
+    # path = pathlib.Path( filename )
+    mk_file_backup( path )
+    with path.open( mode='w' ) as fh:
+        json.dump( data, fh, indent=4, sort_keys=True )
+
+
+def mk_file_backup( path: pathlib.Path ) -> None:
+    if path.exists():
+        ts = time.strftime( '%Y-%m-%d-%X', time.localtime() )
+        tgt = f"{path}.backup-{ts}"
+        # TODO - logging.debug
+        print( f"  backing up '{path}' as '{tgt}'" )
+        path.rename( tgt )
+
+
+def get_workflow_steps_by_name( workflow: dict, step_name: str ) -> list:
+    step_data = []
+    for step in workflow["steps"]:
+        if step["name"] == step_name:
+            step_data.append( step )
+    if len( step_data ) < 1:
+        raise UserWarning( f"Didn't find any steps with name, '{step_name}'" )
+    return step_data
+
+
+def set_step_parameter(
+        workflow,
+        step_name,
+        parameter_name,
+        parameter_value,
+        missing_ok=False,
+    ):
+    ''' Singular version of set_step_parameters,
+        for readability when setting only one parameter
+    '''
+    params = { parameter_name: parameter_value }
+    set_step_parameters( workflow, step_name, params, missing_ok )
+
+
+def set_step_parameters(
+        workflow: dict,
+        step_name: str,
+        params: dict,
+        missing_ok=False,
+    ) -> None:
+    ''' In workflow["steps"]["name"] == step_name
+        for each key,value pair in params:
+        set ["parameters"][key] = value
+        If step_name isn't found throw an error unless missing_ok is True
+    '''
+    # pprint.pp( { "WORKFLOW": workflow } )
+    try:
+        # In general, expect only 1 matching workflow step name,
+        # even though get_workflow_steps_by_name returns a list,
+        # just grab the first one
+        step_data = get_workflow_steps_by_name( workflow, step_name )[0]
+    except UserWarning as e:
+        if not missing_ok:
+            raise e
+    # pprint.pp( { "STEP DATA": step_data } )
+    for parameter_name,value in params.items():
+        step_data["params"][parameter_name] = value
+
+
+# Parseargs does all the requirement processing,
+# ensuring all the necessary pieces of a workflow are provided,
+# thus simplifying the workflow creation/manipulation functions
+# by putting most error checking here
 
 def parseargs():
     # Parse arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--resource_name', \
-                        help='Set the resource name. (Required)')
-    parser.add_argument('--organization_name', \
-                        help='Set the organization name')
-    parser.add_argument('--city', \
-                        help='Set the city')
-    parser.add_argument('--country', \
-                        help='Set the country')
-    parser.add_argument('--latitude', \
-                        help='Set the latitude')
-    parser.add_argument('--longitude', \
-                        help='Set the longitude')
-    #TODO - probably need to deprecate this if switch to using paths.py
-    parser.add_argument('--base_dir', \
-                        help='Set the base directory')
-    parser.add_argument('--scheduler', \
-                        help='set the scheduler name')
-    parser.add_argument('--scheduler_params', action='store', \
-                        help='comma delimited key:value pairs for parameters for your scheduler')
-    parser.add_argument('--amqp_username', \
-                        #action='store_const',const='username', dest='mode',\
-                        help='Username for publishing to AMQP. Not needed if using certificate')
-    parser.add_argument('--amqp_certificate', \
-                        #action='store_const',const='certificate', dest='mode',\
-                        help='Location of certificate for publishing to AMQP. Not needed if using username')
-    parser.add_argument('--amqp_password', \
-                        help='Password for publishing to AMQP. Not needed if using certificate')
-    parser.add_argument('--amqp_certificate_key', \
-                        help='Location of certificate key for publishing to AMQP. Not needed if using username')
-    parser.add_argument('--modulepath', \
-                        help='MODULEPATH for software publishing workflow')
-    parser.add_argument('--servicepath', \
-                        help='SERVICEPATH for service publishing workflow')
-    parser.add_argument('--workflows', \
-                        help='Comma delimited list of workflows to configure')
-    parser.add_argument('--workflowtemplate', \
-                        help='Path to configured workflow to use as template for new workflow')
-    parser.add_argument('--publish', action='store_true', \
-                        help='Configure the services to publish to ACCESS-CI')
-    parser.add_argument('--compute_interval', \
-                        help='Interval in seconds for the compute workflow to wait before rerunning')
-    parser.add_argument('--modules', \
-                        help='Any modules that need to be loaded in the init scripts for workflows')
-    parser.add_argument('--environment', \
-                        help='Any environment variables that need to be loaded in the init scripts for workflows, such as \n * batch scheduler commands that need to be in PATH \n * scheduler-related environment variables may need to be set')
-    parser.add_argument('--pbs_log_dir', \
-                        help='The full path PBS log dir')
-    parser.add_argument('--sge_reporting_log', \
-                        help='The full path (including filename) for your SGE reporting log')
-    parser.add_argument('--slurmctl_log', \
-                        help='The full path (including filename) for your slurmctl.log file')
-    parser.add_argument('--support_contact', \
-                        help='The support contact URL to be published in your ExtModules workflow')
-    parser.add_argument('--modules_interval', \
-                        help='Interval in hours for the ExtModules workflow to wait before rerunning')
-    parser.add_argument('--services_interval', \
-                        help='Interval in hours for the AbstractServices workflow to wait before rerunning')
-    parser.add_argument('--lmod_cache_file', \
-                        help='full path to lmod cache file to use in ExtModules workflow')
-    parser.add_argument('--modules_exclude', \
-                        help='comma delimited list of names of modules to exclude.')
-    parser.add_argument('--modules_recurse', action='store_true', \
-                        help='legacy: assume that module_path dirs and their recursive subdirs contain at most one level of semantically important subdirs')
-    parser.add_argument('--ignore_toplevel_modulefiles', \
-                        action='store_true', \
-                        help='legacy behavior: assume that modulefiles at the top level of each module_path directory should not be reported as software.')
-    return parser.parse_args()
+    constructor_args = {
+        "formatter_class": argparse.RawDescriptionHelpFormatter,
+        "description": "Configure an ACCESS  reporting workflow.",
+        }
+    parser = argparse.ArgumentParser( **constructor_args )
+
+    # Required, always
+    parser.add_argument(
+        '--resource_name',
+        required=True,
+        help='Set the resource name. (Required)'
+    )
+    parser.add_argument(
+        '--workflow',
+        required=True,
+        choices=['extmodules', 'compute' ], #20260212(aloftus) - removed "activity"
+        help='Workflow to configure (Required)'
+    )
+
+    # Publishing to AMQP
+    publish_group = parser.add_argument_group(
+        title="Publish Authentication",
+        description=textwrap.dedent( """
+            If --publish is present, must also provide an authentication combo.
+            One combo of user/pass or cert/key is required alongside --publish.
+            """
+        ),
+    )
+    publish_group.add_argument(
+        '--publish',
+        action='store_true',
+        help='Configure the services to publish to AMQP'
+    )
+    user_group = publish_group.add_mutually_exclusive_group()
+    pwd_group = publish_group.add_mutually_exclusive_group()
+    # about to interleave user_group and pwd_group assignments
+    # so that the help message puts username/password together
+    # and then cert/key also display together in the help message
+    user_group.add_argument(
+        '--amqp_username',
+        help='Username for publishing to AMQP.'
+    )
+    pwd_group.add_argument( #note pwd_group
+        '--amqp_password',
+        help='Password for publishing to AMQP.'
+    )
+    user_group.add_argument( #note this is user_group again
+        '--amqp_certfile',
+        help='Path to certificate file for publishing to AMQP.'
+    )
+    pwd_group.add_argument( #finally, one more pwd_group
+        '--amqp_keyfile',
+        help='Path to certificate key file for publishing to AMQP.'
+    )
+
+    # Optional, used in init.d scripts
+    init_group = parser.add_argument_group(
+        title="Init.d Script Generation",
+        description="Settings and variables for init scripts",
+    )
+    init_group.add_argument(
+        '--modules',
+        help=textwrap.dedent( '''
+            Any modules to be loaded in the init scripts.
+            Format is comma-separated list of values.
+            '''
+        )
+    )
+    init_group.add_argument(
+        '--environment',
+        help=textwrap.dedent( '''
+            Environment variables to be loaded in the init scripts, such as
+            "MODULEPATH" or "SERVICEPATH" or
+            "batch scheduler commands that need to be in PATH" or
+            "scheduler-related environment variables may need to be set".
+            Format is a comma separated list of VARNAME=VALUE pairs.
+            '''
+        )
+    )
+
+    # required by compute workflow
+    compute_group = parser.add_argument_group(
+            title="Compute Workflow Settings",
+            description="Required when configuring compute workflow",
+            )
+    compute_group.add_argument('--organization_name')
+    compute_group.add_argument('--city')
+    compute_group.add_argument('--country')
+    compute_group.add_argument('--latitude')
+    compute_group.add_argument('--longitude')
+    compute_group.add_argument(
+        '--compute_interval',
+        default=60,
+        help='Wait COMPUTE_INTERVAL seconds before re-running the compute workflow'
+    )
+
+    # required for compute and activity
+    scheduler_group = parser.add_argument_group(
+        title="Scheduler",
+        description=textwrap.dedent( """
+            Scheduler is required for compute workflow.
+            Scheduler_params is optional.
+            """
+        ),
+    )
+    # note: if scheduler choices change, make sure to also adjust scheduler vetting
+    scheduler_group.add_argument(
+        '--scheduler',
+        choices=['pbs', 'slurm' ], #20260202(aloftus) - removed "sge"
+        help='set the scheduler name'
+    )
+    # optional for compute and activity
+    scheduler_group.add_argument(
+        '--scheduler_params',
+        action='store',
+        help='comma delimited key:value pairs for parameters for your scheduler'
+    )
+
+    # 20260212(aloftus) - remove support for "activity" workflow
+    # required for activity workflow
+    # activity_group = parser.add_argument_group(
+    #         title="Activity Workflow",
+    #         description="Scheduler logs are required for activity workflow",
+    #         )
+    # activity_choices = activity_group.add_mutually_exclusive_group()
+    # activity_choices.add_argument(
+    #     '--slurmctl_log',
+    #     help='The full path (including filename) for your slurmctl.log file'
+    # )
+    # activity_choices.add_argument(
+    #     '--pbs_log_dir',
+    #     help='The full path to PBS log dir'
+    # )
+    # 20260202(aloftus) - remove sge support
+    #                   - scheduler is no longer used and
+    #                   - IPF support for sge is very likely broken
+    # activity_choices.add_argument(
+    #     '--sge_reporting_log',
+    #     help='The full path (including filename) for your SGE reporting log'
+    # )
 
 
-def configure():
-    args = parseargs()
-    #print()
-    #print("This script asks you for information and configures your IPF installation.")
-    #print("  This script backs up your existing configuration, by renaming the existing configuration files with .backup-TIMESTAMP")
+    # Optional for extmodules workflow
+    extmodules_group = parser.add_argument_group(
+        title="Extmodules Workflow",
+        description="Options for configuring an extmodules workflow.",
+        )
+    extmodules_group.add_argument(
+        '--support_contact',
+        help='The support contact URL to be published in your ExtModules workflow'
+    )
+    extmodules_group.add_argument(
+        '--modules_interval',
+        default=24,
+        help='Wait MODULES_INTERVAL hours before re-running the ExtModules workflow'
+    )
+    extmodules_group.add_argument(
+        '--lmod_cache_file',
+        help='full path to lmod cache file to use in ExtModules workflow'
+    )
+    extmodules_group.add_argument(
+        '--modules_exclude',
+        help='comma delimited list of module names to exclude.'
+    )
+    extmodules_group.add_argument(
+        '--modules_recurse',
+        action='store_true',
+        help=textwrap.dedent( '''
+            legacy: assume that module_path dirs and their recursive subdirs
+            contain at most one level of semantically important subdirs
+            '''
+        ).strip("\n"),
+    )
+    extmodules_group.add_argument(
+        '--ignore_toplevel_modulefiles',
+        action='store_true',
+        help=textwrap.dedent( '''
+            legacy behavior: assume that modulefiles at the top level
+            of each module_path directory should not be reported as software.
+            '''
+        ).strip("\n"),
+    )
 
-    template_json = getTemplateJson(args.workflowtemplate)
+    args = parser.parse_args()
 
-    if args.resource_name:
-        resource_name = args.resource_name
-    else:
-        resource_name = getResourceName(template_json)
+    # 20260212(aloftus) - remove support for "activity" workflow
+    # Vet scheduler (required for compute and activity workflows)
+    # if args.workflow in [ 'compute', 'activity' ]:
+    #     if not args.scheduler:
+    #         msg = "--scheduler is required for compute and activity workflows."
+    #         raise SystemExit( msg )
 
-    #TODO deprecate in favor of paths.py
-    setBaseDir(args)
-   
-    if args.workflows: 
-        for workflow in args.workflows.split(","):
-            print("** Configuring workflow: %s" % workflow)
-            if workflow == "compute":
-               configure_compute_workflow(resource_name,args,template_json)
-            if workflow == "activity":
-               configure_activity_workflow(resource_name,args,template_json)
-            if workflow == "extmodules":
-               configure_extmodules_workflow(resource_name,args,template_json)
-            if workflow == "services":
-               configure_services_workflow(resource_name,args,template_json)
-            if workflow == "ipfinfo":
-               configure_ipfinfo_workflow(resource_name,args,template_json)
-    else:
-        print('\nPlease specify one or more workflows with the "--workflows <workflowlist>" command line option.  \nNote that "<workflowlist>" should be a comma delimited list that includes one or more of:\n     compute\n     activity\n     extmodules\n     services\n     ipfinfo\n')
-        raise SystemExit
-    
+    # Vet compute workflow requirements
+    if args.workflow == "compute":
+        required_args = [
+            "scheduler",
+            "organization_name",
+            "city",
+            "country",
+            "latitude",
+            "longitude",
+            "compute_interval",
+            ] 
+        if not all( [ getattr( args, x ) for x in required_args ] ):
+            msg = textwrap.dedent( f"""
+                Missing one or more of {required_args}.
+                All must be present for configuring compute workflow.
+            """ )
+            raise SystemExit( msg )
 
-    return
+    # 20260212(aloftus) - remove support for "activity" workflow
+    # Vet activity workflow requirements
+    # if args.workflow == "activity":
+    #     msg = None
+    #     if args.scheduler == "slurm":
+    #         if not args.slurmctl_log:
+    #             msg = textwrap.dedent( """
+    #                 --slurmctl_log required when scheduler=slurm and workflow=activity
+    #                 """ ).strip("\n")
+    #         else:
+    #             sctl_logfile = pathlib.Path( args.slurmctl_log )
+    #             if not sctl_logfile.is_file():
+    #                 msg = f"Cannot access slurmctl log '{sctl_logfile}'"
+    #     elif args.scheduler == "pbs":
+    #         if not args.pbs_log_dir:
+    #             msg = textwrap.dedent( """
+    #                 --slurmctl_log required when scheduler=pbs and workflow=activity
+    #                 """ ).strip("\n")
+    #         else:
+    #             pbs_logdir = pathlib.Path( args.pbs_log_dir )
+    #             if not pbs_logdir.is_dir():
+    #                 msg = f"Cannot access pbs log dir '{pbs_logdir}"
+    #     # 20260202(aloftus) - remove sge support
+    #     # elif args.scheduler == "sge" and not args.sge_reporting_log:
+    #     #     msg = textwrap.dedent( """
+    #     #         --slurmctl_log required when scheduler=slurm and workflow=activity
+    #     #         """ ).strip("\n")
+    #     if msg:
+    #         raise SystemExit( msg )
 
-
-#######################################################################################################################
-
-def configure_compute_workflow(resource_name,args,template_json):
-    if args.scheduler:
-        sched_name = args.scheduler
-    else:
-        sched_name = getSchedulerName()
-    #if template_json is a compute workflow, then compute_json should be template_json
-    compute_json = getComputeJsonForScheduler(sched_name,template_json)
-    setResourceName(resource_name, compute_json)
-    setLocation(compute_json,args,template_json)
-    updateFilePublishPaths(resource_name, compute_json)
-    if (args.publish):
-        addAccessAmqpToWorkflow("compute",compute_json, template_json, args)
-    writeComputeWorkflow(resource_name, compute_json)
-    writePeriodicComputeWorkflow(resource_name,args)
-
-    module_names = getModules(args)
-    env_vars = getEnvironmentVariables(args)
-    writeComputeInit(resource_name, module_names, env_vars)
-
-def configure_activity_workflow(resource_name,args,template_json):
-    if args.scheduler:
-        sched_name = args.scheduler
-    else:
-        sched_name = getSchedulerName()
-
-    activity_json = getActivityJsonForScheduler(sched_name,template_json)
-    setResourceName(resource_name, activity_json)
-    updateActivityLogFile(resource_name, activity_json, args)
-    updateFilePublishPaths(resource_name, activity_json)
-    if (args.publish):
-        addAccessAmqpToWorkflow("activity",activity_json, template_json, args)
-    writeActivityWorkflow(resource_name, activity_json)
-
-    module_names = getModules(args)
-    env_vars = getEnvironmentVariables(args)
-    writeActivityInit(resource_name, module_names, env_vars)
-
-
-def configure_extmodules_workflow(resource_name,args,template_json):
-    extmodules_json = getExtModulesJson(template_json)
-    setSupportContact(extmodules_json,args)
-    setExtModulesParams(extmodules_json,args)
-    setResourceName(resource_name, extmodules_json)
-    updateFilePublishPaths(resource_name, extmodules_json)
-    if (args.publish):
-        addAccessAmqpToWorkflow("extmodules",extmodules_json, template_json, args)
-    writeExtModulesWorkflow(resource_name, extmodules_json)
-    writePeriodicExtModulesWorkflow(resource_name,args)
-
-    module_names = getModules(args)
-    env_vars = getEnvironmentVariables(args)
-    writeExtModulesInit(resource_name, module_names, env_vars)
-
-def configure_services_workflow(resource_name,args,template_json):
-    services_json = getAbstractServicesJson(template_json)
-    setResourceName(resource_name, services_json)
-    updateFilePublishPaths(resource_name, services_json)
-    if (args.publish):
-        addAccessAmqpToWorkflow("services",services_json, template_json, args)
-    writeAbstractServicesWorkflow(resource_name, services_json)
-    writePeriodicAbstractServicesWorkflow(resource_name,args)
-
-
-    module_names = getModules(args)
-    env_vars = getEnvironmentVariables(args)
-    writeAbstractServicesInit(resource_name, module_names, env_vars)
-
-
-def configure_ipfinfo_workflow(resource_name,args,template_json):
-    ipfinfo_json = getIPFInfoJson(template_json)
-    if (args.publish):
-        addAccessAmqpToWorkflow("ipfinfo",ipfinfo_json, template_json, args)
-    writeIPFInfoWorkflow(ipfinfo_json)
-
-    module_names = getModules(args)
-    env_vars = getEnvironmentVariables(args)
-    writeIPFInfoInit(resource_name, module_names, env_vars)
-
-#######################################################################################################################
-def getResourceName(template_json):
-    if template_json is not None:
-        for step_json in template_json["steps"]:
-            if step_json["name"] == "ipf.sysinfo.ResourceNameStep":
-                if "params" in step_json:
-                    resource_name = step_json["params"]["resource_name"]
-            return resource_name
-    else:
-        print('\nNo resource name specified.  You must do one of:\n     *use the command line option "--resource_name <name>"\n     *specify a template file that defines the resource name, using --workflowtemplate <file.json>')
-        raise SystemExit
-    return
-
-
-def getTemplateJson(template_name):
-    if template_name:
-        if not testReadFile(template_name):
-            raise Exception("No template file found at %s" % template_name)
+    # Ensure amqp credentials if publish was requested
+    if args.publish:
+        # verify auth combo makes sense (username/password OR cert/key)
+        msg = None
+        if args.amqp_username:
+            if not args.amqp_password:
+                msg = "--amqp_password is required alongside --amqp_username"
         else:
-            return readWorkflowFile(template_name)
-    else:
-        return None
+            # certfile was specified, validate existence
+            certfile = pathlib.Path( args.amqp_certfile )
+            if not certfile.is_file():
+                msg = f"cannot access --amqp_certfile '{certfile}'"
+            keyfile = pathlib.Path( args.amqp_keyfile )
+            if not args.amqp_keyfile:
+                msg = "--amqp_keyfile is required alongside --amqp_certfile"
+            elif not keyfile.is_file():
+                msg = f"cannot access --amqp_keyfile '{keyfile}'"
+        if msg:
+            raise SystemExit( msg )
 
-def getComputeJsonForScheduler(sched_name,template_json):
-    if template_json is not None:
-        try:
-            template_json["name"].index("_compute")
-        except ValueError:
-            pass
-        else:
-            return template_json
-    return readWorkflowFile(os.path.join(getWorkflowTemplateGlueDir(), sched_name+"_compute.json"))
-
-
-def getActivityJsonForScheduler(sched_name,template_json):
-    if template_json is not None:
-        try:
-            template_json["name"].index("_activity")
-        except ValueError:
-            pass
-        else:
-            return template_json
-    parts = sched_name.split("_")
-    if len(parts) == 1:
-        sched_name = sched_name
-    elif len(parts) == 2:
-        sched_name = parts[1]
-    else:
-        print("Warning: expected one or two parts in scheduler name - may not find _activity workflow file")
-        sched_name = sched_name
-    return readWorkflowFile(os.path.join(getWorkflowTemplateGlueDir(), sched_name+"_activity.json"))
+    return args
 
 
-def getExtModulesJson(template_json):
-    if template_json is not None:
-        try:
-            template_json["name"].index("_extmodules")
-        except ValueError:
-            pass
-        else:
-            return template_json
-    return readWorkflowFile(os.path.join(getWorkflowTemplateGlueDir(), "extmodules.json"))
+### Main workflow manipulation functions
 
 
-def setSupportContact(extmodules_json,args):
-    if args.support_contact:
-        support_contact = args.support_contact
-    else:
-        support_contact = None
-    for step_json in extmodules_json["steps"]:
-        if step_json["name"] == "ipf.glue2.modules.ExtendedModApplicationsStep":
-            if support_contact is not None:
-                if "params" in step_json:
-                    step_json["params"]["default_support_contact"] = support_contact
-                else:
-                    step_json["params"]={}
-                    step_json["params"]["default_support_contact"] = getSupportContact()
-            return
-    raise Exception("didn't find an ExtendedModApplicationsStep to modify")
-
-def setExtModulesParams(extmodules_json,args):
-    for step_json in extmodules_json["steps"]:
-        if step_json["name"] == "ipf.glue2.modules.ExtendedModApplicationsStep":
-            if args.modules_recurse is True:
-                if "params" in step_json:
-                    step_json["params"]["modules_recurse"] = args.modules_recurse
-                else:
-                    step_json["params"]={}
-                    step_json["params"]["modules_recurse"] = args.modules_recurse
-            if args.ignore_toplevel_modulefiles is True:
-                if "params" in step_json:
-                    step_json["params"]["ignore_toplevel_modulefiles"] = args.ignore_toplevel_modulefiles
-                else:
-                    step_json["params"]={}
-                    step_json["params"]["ignore_toplevel_modulefiles"] = args.ignore_toplevel_modulefiles
-            if args.modules_exclude is not None:
-                if "params" in step_json:
-                    step_json["params"]["exclude"] = args.modules_exclude
-                else:
-                    step_json["params"]={}
-                    step_json["params"]["exclude"] = args.modules_exclude
-            if args.lmod_cache_file is not None:
-                if "params" in step_json:
-                    step_json["params"]["lmod_cache_file"] = args.lmod_cache_file
-                else:
-                    step_json["params"]={}
-                    step_json["params"]["lmod_cache_file"] = args.lmod_cache_file
-            return
-    raise Exception("didn't find an ExtendedModApplicationsStep to modify")
+def set_resource_name( workflow ):
+    args = get_args()
+    res_name = get_short_resource_name()
+    workflow["name"] = f"{res_name}_{workflow['name']}"
+    set_step_parameter(
+        workflow = workflow,
+        step_name = "ipf.sysinfo.ResourceNameStep",
+        parameter_name = "resource_name",
+        parameter_value = args.resource_name,
+    )
 
 
-
-def getAbstractServicesJson(template_json):
-    if template_json is not None:
-        if _services in template_json["Name"]:
-            return template_json
-    return readWorkflowFile(os.path.join(getWorkflowTemplateGlueDir(), "abstractservice.json"))
-
-
-def getIPFInfoJson(template_json):
-    if template_json is not None:
-        if _ipfinfo in template_json["Name"]:
-            return template_json
-    return readWorkflowFile(os.path.join(getWorkflowTemplateGlueDir(), "ipfinfo_publish.json"))
-
-
-def getSchedulerName():
-    names = []
-    sched_dir = getWorkflowTemplateGlueDir()
-    for file_name in os.listdir(sched_dir):
-        if file_name.endswith("_compute.json"):
-            parts = file_name.split("_")
-            if len(parts) == 2:
-                names.append(parts[0])
-            else:
-                names.append(parts[0]+"_"+parts[1])
-    names = sorted(names)
-    opts('\nPlease specify a scheduler using the "--scheduler <scheduler>" command line option.  You can choose from one of the following:', names)
-    raise SystemExit
+def set_extmodules_params( workflow: dict ) -> None:
+    args = get_args()
+    step_name = "ipf.glue2.modules.ExtendedModApplicationsStep"
+    argname2paramname_map = {
+        "modules_exclude": "exclude",
+        "ignore_toplevel_modulefiles": "ignore_toplevel_modulefiles",
+        "lmod_cache_file": "lmod_cache_file",
+        "modules_recurse": "modules_recurse",
+        "support_contact": "default_support_contact",
+    }
+    params = {}
+    for argname,paramname in argname2paramname_map.items():
+        user_provided_value = getattr( args, argname )
+        if user_provided_value:
+            params[ paramname ] = user_provided_value
+    set_step_parameters( workflow, step_name, params )
 
 
-def setResourceName(resource_name, workflow_json):
-    res_name = resource_name.split(".")[0]
-    workflow_json["name"] = res_name + "_" + workflow_json["name"]
-    for step_json in workflow_json["steps"]:
-        if step_json["name"] == "ipf.sysinfo.ResourceNameStep":
-            step_json["params"] = {}
-            step_json["params"]["resource_name"] = resource_name
-            return
-    raise Exception("didn't find a ResourceNameStep to modify")
+def set_location( workflow: dict ) -> None:
+    args = get_args()
+    step_name = "ipf.glue2.location.LocationStep"
+    argname2paramname_map = {
+        "organization_name": "Name",
+        "city": "Place",
+        "country": "Country",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+    }
+    location_params = {}
+    for argname,paramname in argname2paramname_map.items():
+        user_provided_value = getattr( args, argname )
+        if user_provided_value:
+            location_params[ paramname ] = user_provided_value
+    params = { "location": location_params }
+    set_step_parameters( workflow, step_name, params )
 
 
-def setLocation(compute_json,args,template_json):
-    if template_json is not None:
-        for templatestep_json in template_json["steps"]:
-            if templatestep_json["name"] == "ipf.glue2.location.LocationStep":
-                if "params" in templatestep_json:
-                    location = templatestep_json["params"]["location"]
-                    for step_json in compute_json["steps"]:
-                        if step_json["name"] == "ipf.glue2.location.LocationStep":    
-                            step_json["params"]["location"]=copy.deepcopy(templatestep_json["params"]["location"])
-    for step_json in compute_json["steps"]:
-        if step_json["name"] == "ipf.glue2.location.LocationStep":
-            updateLocationStep(step_json["params"]["location"],args)
-            return
-    raise Exception("didn't find a LocationStep to modify")
+def update_filepublish_paths( workflow ):
+    res_name = get_short_resource_name()
+    step_name = "ipf.publish.FileStep"
+    step_matches = get_workflow_steps_by_name( workflow, step_name )
+    for step in step_matches:
+        old_name = step["params"]["path"]
+        new_name = f"{res_name}_{old_name}"
+        step["params"]["path"] = new_name
 
 
-def updateLocationStep(params,args):
-    #Command line options always override template
-    if args.organization_name:
-        params["Name"] = args.organization_name
-    elif not params["Name"]:
-        print('Please Specify an organization_name with "--organization_name"')
-        raise SystemExit 
-    if args.city:
-        params["Place"] = args.city
-    elif not params["Place"]:
-        print('Please Specify a city with "--city"')
-        raise SystemExit 
-    if args.country:
-        params["Country"] = args.country
-    elif not params["Country"]:
-        print('Please Specify a country with "--country"')
-        raise SystemExit 
-    if args.latitude:
-        params["Latitude"] = args.latitude
-    elif not params["Latitude"]:
-        print('Please Specify a latitude with "--latitude"')
-        raise SystemExit 
-    if args.longitude:
-        params["Longitude"] = args.longitude
-    elif not params["Longitude"]:
-        print('Please Specify a longitude with "--longitude"')
-        raise SystemExit 
-
-
-
-def updateFilePublishPaths(resource_name, workflow_json):
-    res_name = resource_name.split(".")[0]
-    for step_json in workflow_json["steps"]:
-        if step_json["name"] == "ipf.publish.FileStep":
-            step_json["params"]["path"] = res_name + \
-                "_" + step_json["params"]["path"]
-
-def addAccessAmqpToWorkflow(workflow_name,workflow_json, template_json, args):
+def add_amqp_publish_step( workflow ):
+    args = get_args()
     if not args.publish:
         return False
+    workflow_name = args.workflow
     if workflow_name == "compute":
         publish_step = "ipf.glue2.compute.PublicOgfJson"
         exchange = "glue2.compute"
         description = "Publish compute resource description to ACCESS-CI"
-    elif workflow_name == "activity":
-        publish_step = "ipf.glue2.computing_activity.ComputingActivityOgfJson"
-        exchange = "glue2.computing_activity"
-        description = "Publish job updates to ACCESS-CI"
     elif workflow_name == "extmodules":
         publish_step = "ipf.glue2.application.ApplicationsOgfJson"
         exchange = "glue2.applications"
         description = "Publish modules to ACCESS-CI"
-    elif workflow_name == "services":
-        publish_step = "ipf.glue2.abstractservice.ASOgfJson"
-        exchange = "glue2.compute"
-        description = "Publish Services to ACCESS-CI"
-    elif workflow_name == "ipfinfo":
-        publish_step = "ipf.ipfinfo.IPFInformationJson"
-        exchange = "glue2.compute"
-        description = "Publish IPFInfo to ACCESS-CI"
-    if args.amqp_certificate:
-        cert_path = args.amqp_certificate
-        if not testReadFile(cert_path):
-            raise Exception("No certificate found at %s" % cert_path)
-        
-        if args.amqp_certificate_key:
-            key_path = args.amqp_certificate_key
-            if not testReadFile(key_path):
-                raise Exception("No key found at %s" % key_path)
-        username = None
-        password = None
-    elif args.amqp_username:
-        username = args.amqp_username
-        password = args.amqp_password
-        cert_path = None
-        key_path = None
-    elif template_json is not None:
-        try:
-            template_json["name"].index("_"+workflow_name)
-        except ValueError:
-            #Template is not for workflow--copy section in
-            for step in template_json["steps"]:
-                #compute workflow has two publish steps, copy both
-                if step["name"] == "ipf.publish.AmqpStep" and "access-ci.org" in step["params"]["services"][0]:
-                    if workflow_name == "compute" and step["description"] == "Publish description of current jobs to ACCESS-CI":
-                        publish_description = step["description"]
-                    else:
-                        publish_description = description
-                    amqp_step = copy.deepcopy(step)
-                    amqp_step["description"] = publish_description
-                    amqp_step["params"]["publish"] = [publish_step]
-                    amqp_step["params"]["exchange"] = exchange
-                    workflow_json["steps"].append(amqp_step)
-            return True
-        else:
-            #Template is for workflow--already has the section, just return
-            return True
-    else: 
-        raise Exception("Certificate/key or username/password must be specified")
-    #No template json to copy
-    amqp_step = {}
-    amqp_step["name"] = "ipf.publish.AmqpStep"
-    amqp_step["description"] = description 
-    amqp_step["params"] = {}
-    amqp_step["params"]["publish"] = [publish_step]
-    amqp_step["params"]["services"] = [
-        "opspub.access-ci.org", "opspub-alt.access-ci.org"]
-    amqp_step["params"]["vhost"] = "infopub"
-    amqp_step["params"]["exchange"] = exchange
-    amqp_step["params"]["ssl_options"] = {}
-    amqp_step["params"]["ssl_options"]["ca_certs"] = "ca-certificates/ca_certs.pem"
-    if cert_path is not None:
-        amqp_step["params"]["ssl_options"]["certfile"] = cert_path
-        amqp_step["params"]["ssl_options"]["keyfile"] = key_path
+
+    # 20260212(aloftus) - remove support for "activity" workflow
+    # elif workflow_name == "activity":
+    #     publish_step = "ipf.glue2.computing_activity.ComputingActivityOgfJson"
+    #     exchange = "glue2.computing_activity"
+    #     description = "Publish job updates to ACCESS-CI"
+
+    amqp_step = {
+        "name": "ipf.publish.AmqpStep",
+        "description": description,
+        "params": {
+            "publish": [ publish_step ],
+            "services": [
+                "opspub.access-ci.org",
+                "opspub-alt.access-ci.org",
+            ],
+            "vhost": "infopub",
+            "exchange": exchange,
+            "ssl_options": {
+                "ca_certs": "ca-certificates/ca_certs.pem",
+                # this is where certfile & keyfile get added
+                # "certfile": path to certfile,
+                # "keyfile": path to certificate keyfile,
+            },
+            # this is where username & password get added
+            # "username": username for AMQP login
+            # "password": password for username for AMQP login
+        },
+    }
+    # add in the auth options
+    if args.amqp_username:
+        amqp_step["params"]["username"] = args.amqp_username
+        amqp_step["params"]["password"] = args.amqp_password
     else:
-        amqp_step["params"]["username"] = username
-        amqp_step["params"]["password"] = password
-    workflow_json["steps"].append(amqp_step)
-    
+        amqp_step["params"]["ssl_options"]["certfile"] = args.amqp_certfile
+        amqp_step["params"]["ssl_options"]["keyfile"] = args.amqp_keyfile
+    workflow["steps"].append(amqp_step)
     if workflow_name == "compute":
+        # this is how the "compute" workflow also publishes activity data
         amqp_step = copy.deepcopy(amqp_step)
         amqp_step["description"] = "Publish description of current jobs to ACCESS-CI"
         amqp_step["params"]["publish"] = ["ipf.glue2.compute.PrivateOgfJson"]
         amqp_step["params"]["exchange"] = "glue2.computing_activities"
-        workflow_json["steps"].append(amqp_step)
-    return True
+        workflow["steps"].append(amqp_step)
 
 
-def updateActivityLogFile(resource_name, activity_json, args):
-    res_name = resource_name.split(".")[0]
-    for step in activity_json["steps"]:
-        if not "ActivityUpdateStep" in step["name"]:
-            continue
-        step["params"]["position_file"] = res_name+"_activity.pos"
-        if "pbs" in step["name"]:
-            if "PBS_HOME" not in os.environ:
-                print(
-                    "  Warning: PBS_HOME environment variable not set - can't check for server_logs directory")
-                default = None
-            else:
-                default = os.path.join(
-                    os.environ["PBS_HOME"], "spool", "server_logs")
-                testReadDirectory(log_dir)
-            log_dir = args.pbs_log_dir or default
-            if not testReadDirectory(log_dir):
-                raise Exception("Logfile %s not found. Please specify full path for your PBS log dir with the --pbs_log_dir option" % log_file)
-            step["params"]["server_logs_dir"] = log_dir
-        elif "sge" in step["name"]:
-            if "SGE_ROOT" not in os.environ:
-                print(
-                    "  Warning: SGE_ROOT environment variable not set - can't check for reporting file")
-                default = None
-            else:
-                default = os.path.join(
-                    os.environ["SGE_ROOT"], "default", "common", "reporting")
-                testReadFile(log_file)
-            log_dir = args.sge_reporting_log or default
-            if not testReadFile(log_file):
-                #return updateActivityLogFile(resource_name, activity_json)
-                raise Exception("Logfile %s not found. Please specify full path for your SGE log dir with the --sge_reporting_log option" % log_file)
-            step["params"]["reporting_file"] = log_file
-        elif "slurm" in step["name"]:
-            if os.path.exists("/usr/local/slurm/var/slurmctl.log"):
-                default = "/usr/local/slurm/var/slurmctl.log"
-            else:
-                default = None
-            log_file = args.slurmctl_log or default
-            print("logfile is %s" % log_file)
-            if log_file is not None and not testReadFile(log_file):
-                #return updateActivityLogFile(resource_name, activity_json)
-                raise Exception("Logfile %s not found. Please specify full path (including filename) for your slurmctl.log file with the --slurmctl option" % log_file)
-            step["params"]["slurmctl_log_file"] = log_file
-        else:
-            raise Exception("ActivityUpdateStep isn't pbs, sge, or slurm")
-        break
+# 20260212(aloftus) - remove support for "activity" workflow
+# def update_activity_logfile( workflow: dict ) -> None:
+#     args = get_args()
+#     res_name = get_short_resource_name()
+#     step_name = f"ipf.glue2.{args.scheduler}.ComputingActivityUpdateStep"
+#     params_to_update = {
+#         "position_file": f"{res_name}_activity.pos",
+#     }
+#     if args.scheduler == "slurm":
+#         params_to_udpate["slurmctl_log_file"] = args.slurmctl_log
+#     elif args.scheduler == "pbs":
+#         params_to_udpate["server_logs_dir"] = args.pbs_log_dir
+#     set_step_parameters( workflow, step_name, params_to_update )
 
 
-#######################################################################################################################
+def write_workflow_file( workflow: dict ) -> None:
+    args = get_args()
+    res_name = get_short_resource_name()
+    path = getWorkflowGlueDir() / f'{res_name}_{args.workflow}.json'
+    print( f"  -> writing workflow to {path}" ) #INFO
+    write_json_file( path, workflow )
 
 
-def getModules(args):
-    if not args.modules:
-        return None
-    else:
-        csv = args.modules
-    return csv.split(",")
+def write_periodic_workflow_file( max_interval ):
+    args = get_args()
+    res_name = get_short_resource_name()
+    step_name = f"{res_name}_{args.workflow}_periodic"
+    periodic_json = {
+        "name" : step_name,
+        "description" : f"Gather GLUE2 {args.workflow} information periodically",
+        "steps" : [
+            {
+                "name": "ipf.step.WorkflowStep",
+                "params": {
+                    "workflow" : f"glue2/{res_name}_{args.workflow}.json",
+                    "maximum_interval" : max_interval,
+                },
+            },
+        ],
+    }
+    path = getWorkflowGlueDir() / f"{step_name}.json"
+    print( f"  -> writing extmodules periodic workflow to '{path}'" )
+    write_json_file( path, periodic_json )
+
+### Main functions
 
 
-def getEnvironmentVariables(args):
-    vars = {}
-    if args.modulepath:
-        _modulepath = args.modulepath
-    else:
-        _modulepath = None 
-    if _modulepath is not None:
-        vars["MODULEPATH"] = _modulepath
-    if args.servicepath:
-        _servicepath = args.servicepath
-    else:
-        _servicepath = None 
-    if _servicepath is not None:
-        vars["SERVICEPATH"] = _servicepath
-    if args.environment:
-        _envvars = args.environment.split(",")
-        for _envvar in _envvars:
-            (name,value) = _envvar.split("=")
-            vars[name] = value
-    return vars
+def make_workflow():
+    args = get_args()
+    workflow_data = get_workflow_template()
+    set_resource_name( workflow_data )
+    update_filepublish_paths( workflow_data )
+    add_amqp_publish_step( workflow_data )
+    # pprint.pp( { "DEBUG - WORKFLOW after add_amqp_publish_step": workflow_data } )
+    # do unique per-workflow parts
+    if args.workflow == "extmodules":
+        # do any extmodules specific configuration
+        set_extmodules_params( workflow_data )
+    elif args.workflow == "compute":
+        # do any compute specific configuration
+        set_location( workflow_data )
 
-#######################################################################################################################
+    # 20260212(aloftus) - remove support for "activity" workflow
+    # elif args.workflow == "activity":
+    #     # do any activity specific configuration
+    #     update_activity_logfile( workflow_data )
 
-
-def writeComputeWorkflow(resource_name, compute_json):
-    res_name = resource_name.split(".")[0]
-    path = os.path.join(getGlueWorkflowDir(), res_name+"_compute.json")
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    print("  -> writing compute workflow to %s" % path)
-    f = open(path, "w")
-    f.write(json.dumps(compute_json, indent=4, sort_keys=True))
-    f.close()
+    # write the workflow to file
+    # pprint.pprint( workflow_data ) #DEBUG
+    write_workflow_file( workflow_data )
 
 
-def writePeriodicComputeWorkflow(resource_name,args):
-    res_name = resource_name.split(".")[0]
-    periodic_json = {}
-    periodic_json["name"] = res_name+"_compute_periodic"
-    periodic_json["description"] = "Gather GLUE2 compute information periodically"
-    periodic_json["steps"] = []
-
-    step_json = {}
-    step_json["name"] = "ipf.step.WorkflowStep"
-    step_json["params"] = {}
-    step_json["params"]["workflow"] = "glue2/"+res_name+"_compute.json"
-    if args.compute_interval:
-        interval_str = args.compute_interval
-    else:
-        interval_str = 60
-    step_json["params"]["maximum_interval"] = int(interval_str)
-
-    periodic_json["steps"].append(step_json)
-
-    path = os.path.join(getGlueWorkflowDir(), res_name +
-                        "_compute_periodic.json")
-    print("  -> writing periodic compute workflow to %s" % path)
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    f = open(path, "w")
-    f.write(json.dumps(periodic_json, indent=4, sort_keys=True))
-    f.close()
+def make_periodic_workflow():
+    args = get_args()
+    max_interval = None
+    if args.workflow == "compute":
+        max_interval = int( args.compute_interval )
+    elif args.workflow == "extmodules":
+        max_interval = int( args.modules_interval ) * 60 * 60
+    if max_interval:
+        write_periodic_workflow_file( max_interval )
 
 
-def writeActivityWorkflow(resource_name, activity_json):
-    res_name = resource_name.split(".")[0]
-    path = os.path.join(getGlueWorkflowDir(), res_name+"_activity.json")
-    print("  -> writing activity workflow to %s" % path)
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    f = open(path, "w")
-    f.write(json.dumps(activity_json, indent=4, sort_keys=True))
-    f.close()
-
-
-def writeModulesWorkflow(resource_name, modules_json):
-    res_name = resource_name.split(".")[0]
-    path = os.path.join(getGlueWorkflowDir(), res_name+"_modules.json")
-    print("  -> writing modules workflow to %s" % path)
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    f = open(path, "w")
-    f.write(json.dumps(modules_json, indent=4, sort_keys=True))
-    f.close()
-
-
-def writeExtModulesWorkflow(resource_name, extmodules_json):
-    res_name = resource_name.split(".")[0]
-    path = os.path.join(getGlueWorkflowDir(), res_name+"_extmodules.json")
-    print("  -> writing extended modules workflow to %s" % path)
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    f = open(path, "w")
-    f.write(json.dumps(extmodules_json, indent=4, sort_keys=True))
-    f.close()
-
-
-def writeAbstractServicesWorkflow(resource_name, services_json):
-    res_name = resource_name.split(".")[0]
-    path = os.path.join(getGlueWorkflowDir(), res_name+"_services.json")
-    print("  -> writing abstract services workflow to %s" % path)
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    f = open(path, "w")
-    f.write(json.dumps(services_json, indent=4, sort_keys=True))
-    f.close()
-
-
-def writeIPFInfoWorkflow(ipfinfo_json):
-    path = os.path.join(getWorkflowDir(), "ipfinfo_publish.json")
-    print("  -> writing ipfinfo publish workflow to %s" % path)
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    f = open(path, "w")
-    f.write(json.dumps(ipfinfo_json, indent=4, sort_keys=True))
-    f.close()
-
-
-def writePeriodicExtModulesWorkflow(resource_name,args):
-    res_name = resource_name.split(".")[0]
-    periodic_json = {}
-    periodic_json["name"] = res_name+"_extmodules_periodic"
-    periodic_json["description"] = "Gather GLUE2 Extended module (Software) information periodically"
-    periodic_json["steps"] = []
-
-    step_json = {}
-    step_json["name"] = "ipf.step.WorkflowStep"
-    step_json["params"] = {}
-    step_json["params"]["workflow"] = "glue2/"+res_name+"_extmodules.json"
-    if args.modules_interval:
-        interval_str = args.modules_interval
-    else:
-        interval_str = 1
-    step_json["params"]["maximum_interval"] = int(interval_str) * 60 * 60
-
-    periodic_json["steps"].append(step_json)
-
-    path = os.path.join(getGlueWorkflowDir(), res_name +
-                        "_extmodules_periodic.json")
-    print("  -> writing periodic extended modules (software) workflow to %s" % path)
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    f = open(path, "w")
-    f.write(json.dumps(periodic_json, indent=4, sort_keys=True))
-    f.close()
-
-
-def writePeriodicAbstractServicesWorkflow(resource_name,args):
-    res_name = resource_name.split(".")[0]
-    periodic_json = {}
-    periodic_json["name"] = res_name+"_services_periodic"
-    periodic_json["description"] = "Gather GLUE2 AbstractService information periodically"
-    periodic_json["steps"] = []
-
-    step_json = {}
-    step_json["name"] = "ipf.step.WorkflowStep"
-    step_json["params"] = {}
-    step_json["params"]["workflow"] = "glue2/"+res_name+"_services.json"
-    if args.services_interval:
-        interval_str = args.services_interval
-    else:
-        interval_str = 1
-    step_json["params"]["maximum_interval"] = int(interval_str) * 60 * 60
-
-    periodic_json["steps"].append(step_json)
-
-    path = os.path.join(getGlueWorkflowDir(), res_name +
-                        "_services_periodic.json")
-    print("  -> writing periodic Abstract Services workflow to %s" % path)
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    f = open(path, "w")
-    f.write(json.dumps(periodic_json, indent=4, sort_keys=True))
-    f.close()
-
-
-#######################################################################################################################
-
-def writeComputeInit(resource_name, module_names, env_vars):
-    res_name = resource_name.split(".")[0]
-    path = os.path.join(getBaseDir(), "etc", "ipf", "init.d",
-                        "ipf-"+res_name+"-glue2-compute")
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    #TODO why does "name" have a newline?
-    name = "%s_compute_periodic\n" % res_name
-    writeInit(resource_name, module_names, env_vars, name, path)
-
-
-def writeActivityInit(resource_name, module_names, env_vars):
-    res_name = resource_name.split(".")[0]
-    path = os.path.join(getBaseDir(), "etc", "ipf", "init.d",
-                        "ipf-"+res_name+"-glue2-activity")
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    #TODO why does "name" have a newline?
-    name = "%s_activity\n" % res_name
-    writeInit(resource_name, module_names, env_vars, name, path)
-
-
-def writeModulesInit(resource_name, module_names, env_vars):
-    res_name = resource_name.split(".")[0]
-    path = os.path.join(getBaseDir(), "etc", "ipf", "init.d",
-                        "ipf-"+res_name+"-glue2-modules")
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    #TODO why does "name" have a newline?
-    name = "%s_modules_periodic\n" % res_name
-    writeInit(resource_name, module_names, env_vars, name, path)
-
-
-def writeExtModulesInit(resource_name, module_names, env_vars):
-    res_name = resource_name.split(".")[0]
-    path = os.path.join(getBaseDir(), "etc", "ipf", "init.d",
-                        "ipf-"+res_name+"-glue2-extmodules")
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    #TODO why does "name" have a newline?
-    name = "%s_extmodules_periodic\n" % res_name
-    writeInit(resource_name, module_names, env_vars, name, path)
-
-
-def writeAbstractServicesInit(resource_name, module_names, env_vars):
-    res_name = resource_name.split(".")[0]
-    path = os.path.join(getBaseDir(), "etc", "ipf", "init.d",
-                        "ipf-"+res_name+"-glue2-services")
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    #TODO why does "name" have a newline?
-    name = "%s_services_periodic\n" % res_name
-    writeInit(resource_name, module_names, env_vars, name, path)
-
-
-def writeIPFInfoInit(resource_name, module_names, env_vars):
-    #res_name = resource_name.split(".")[0]
-    path = os.path.join(getBaseDir(), "etc", "ipf", "init.d", "ipfinfo")
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    #TODO why does "name" have a newline?
-    name = "ipfinfo_publish_periodic\n"
-    writeInit(resource_name, module_names, env_vars, name, path)
-
-
-def writeInit(resource_name, module_names, env_vars, name, path):
-    res_name = resource_name.split(".")[0]
-    # why are these hardcoded?
-    # TODO better to get them from paths.py
-    ipf_etc_path = pathlib.Path( getBaseDir(), 'etc', 'ipf' )
-    ipf_var_path = pathlib.Path( getBaseDir(), 'var', 'ipf' )
-    template_file = pathlib.Path(
-        getBaseDir(), 'etc', 'ipf', 'init.d', 'ipf-WORKFLOW' )
-    # in_file = open(os.path.join(getBaseDir(), "etc",
-    #                             "ipf", "init.d", "ipf-WORKFLOW"), "r")
-    init_file = pathlib.Path( path )
-    #out_file = open(path, "w")
+def make_init():
+    args = get_args()
+    res_name = get_short_resource_name()
+    modules_to_load = get_modules()
+    env_vars = get_environment_variables()
+    init_file = pathlib.Path(
+        IPF_ETC_PATH,
+        'init.d',
+        f'ipf-{res_name}-glue2-{args.workflow}'
+    )
+    mk_file_backup( init_file )
+    template_file = pathlib.Path( IPF_ETC_PATH, 'init.d', 'init.template' )
+    pattern = "___DATA_FROM_CONFIGURE.PY_HERE___"
+    pattern_was_found_already = False
     with template_file.open() as infile, init_file.open('w') as outfile:
         for line in infile:
-            if line.startswith("WORKFLOW_NAME="):
-                #TODO name has a newline in it, if that's removed, add one here
-                outfile.write( f"WORKFLOW_NAME={name}" )
-            # TODO what's the deal with a newline at end of string to match?
-            elif line.startswith("WORKFLOW_CFG=") and name == "ipf_publish_periodic\n":
-                    outfile.write("WORKFLOW_CFG=${NAME}.json\n")
-            elif line.startswith( "WORKFLOW_DIR=" ):
-                outfile.write( f"WORKFLOW_DIR={getWorkflowDir()}\n" )
-            elif line.startswith( "RES_NAME=" ):
-                outfile.write( f"RES_NAME={res_name}\n" )
-            elif line.startswith( "INIT_FILE=" ):
-                outfile.write( f"INIT_FILE={init_file}\n" )
-            # still needed?
-            # elif line.startswith("IPF_USER="):
-            #     outfile.write("IPF_USER=%s\n" % getpass.getuser())
-            elif line.startswith("export IPF_ETC_PATH="):
-                outfile.write( f"export IPF_ETC_PATH={ipf_etc_path}\n" )
-            elif line.startswith("export IPF_VAR_PATH="):
-                outfile.write( f"export IPF_VAR_PATH={ipf_var_path}\n" )
-            elif "modules" in line and module_names != None:
+            if pattern_was_found_already:
                 outfile.write(line)
-                outfile.write("source %s\n" % os.path.join(
-                    os.environ["MODULESHOME"], "init", "bash"))
-                for module_name in module_names:
-                    outfile.write("module load %s\n" % module_name)
-            elif "environment variables" in line and len(env_vars) > 0:
-                outfile.write(line)
-                for name in env_vars:
-                    outfile.write("export %s=%s\n" % (name, env_vars[name]))
             else:
-                outfile.write(line)
-    # in_file.close()
-    # out_file.close()
-
-#######################################################################################################################
-
-
-def getSupportContact():
-    support_contact = '[{"GlobalID":"support.access-ci.org","Name":"ACCESS Support","Description":"ACCESS Support","ShortName":"ACCESS","ContactURL":"https://support.access-ci.org"}]'
-
-    return support_contact
-
-
-def getGlueWorkflowDir():
-    return os.path.join(getWorkflowDir(), "glue2")
-
-def getWorkflowTemplateDir():
-    return os.path.join(getWorkflowDir(), "templates")
-
-def getWorkflowTemplateGlueDir():
-    return os.path.join(getWorkflowTemplateDir(), "glue2")
-
-def getWorkflowDir():
-    #TODO replace hardcoded path with item from paths.py
-    return os.path.join(getBaseDir(), "etc", "ipf", "workflow")
-
-
-# TODO Deprecate in favor of paths.py ?
-_base_dir = None
-
-
-# TODO Deprecate in favor of paths.py ?
-def getBaseDir():
-    global _base_dir
-    if _base_dir is not None:
-        return _base_dir
-    return _base_dir
-
-# TODO Deprecate in favor of paths.py ?
-def setBaseDir(args):
-    global _base_dir
-    if args.base_dir:
-       _base_dir = args.base_dir 
-       return _base_dir
-    else:
-        _base_dir = os.path.join(sysconfig.get_paths()["purelib"], "ipf")
-    if _base_dir is None:
-        print('\nError: "ipf" not found in python libraries.')
-        raise SystemExit
-
-    return _base_dir
-
-
-def readWorkflowFile(path):
-    f = open(path)
-    text = f.read()
-    f.close()
-    return json.loads(text)
-
-#######################################################################################################################
-
-
-def question(text, default=None):
-    print()
-    if default is None:
-        answer = input("%s: " % text)
-        if answer == "":
-            raise Exception("no input provided")
-    else:
-        answer = input("%s (%s): " % (text, default))
-        if answer == "":
-            return default
-    return answer
-
-def opts(text, opts, default=None):
-    print()
-    if default is None:
-        print("%s:" % text)
-    else:
-        print("%s (%s):" % (text, default))
-    for i in range(len(opts)):
-        print("  (%d) %s" % ((i+1), opts[i]))
-
-def options(text, opts, default=None):
-    print()
-    if default is None:
-        print("%s:" % text)
-    else:
-        print("%s (%s):" % (text, default))
-    for i in range(len(opts)):
-        print("  (%d) %s" % ((i+1), opts[i]))
-    answer = input(": ")
-    if answer == "":
-        if default is None:
-            print("no options selected - pick a number")
-            return options(text, opts, default)
-        else:
-            return default
-    try:
-        index = int(answer)
-    except ValueError:
-        print("enter a number")
-        return options(text, opts, default)
-    if index < 1 or index > len(opts):
-        print("select an option between 1 and %d" % len(opts))
-        return options(text, opts, default)
-    return opts[index-1]
-
-#######################################################################################################################
-
-
-def testReadFile(path, print_warnings=True):
-    if not os.path.exists(path):
-        if print_warnings:
-            print("  Warning: file %s doesn't exist" % path)
-        return False
-    if not os.access(path, os.R_OK):
-        if print_warnings:
-            print("  Warning: file %s can't be read by current user" % path)
-        return False
-    return True
-
-
-def testReadDirectory(path, print_warnings=True):
-    if not os.path.exists(path):
-        if print_warnings:
-            print("  Warning: directory %s doesn't exist" % path)
-        return False
-    if not os.path.isdir(path):
-        if print_warnings:
-            print("  Warning: %s is not a directory" % path)
-        return False
-    if not os.access(path, os.R_OK):
-        if print_warnings:
-            print("  Warning: directory %s can't be read by current user" % path)
-        return False
-    return True
-
-#######################################################################################################################
+                if pattern in line:
+                    # Dump out the config
+                    outfile.write(
+                        textwrap.dedent( f"""
+                            export IPF_ETC_PATH={IPF_ETC_PATH}
+                            export IPF_VAR_PATH={IPF_VAR_PATH}
+                            {env_vars}
+                            WORKFLOW_NAME={res_name}_{args.workflow}_periodic
+                            WORKFLOW_DIR={getWorkflowDir()}
+                            INIT_FILE={init_file}
+                            RES_NAME={res_name}
+                            {modules_to_load}
+                            """
+                        )
+                    )
+                    pattern_was_found_already = True
+                else:
+                    outfile.write(line)
 
 
 if __name__ == "__main__":
-    configure()
+    make_workflow()
+    make_periodic_workflow()
+    make_init()

@@ -1,9 +1,24 @@
 {
   "name": "Extended modules",
   "steps": [
-    { "name": "ipf.sysinfo.ResourceNameStep"
+    {
+      "name": "ipf.sysinfo.ResourceNameStep",
+      "params": {}
     },
-    { "name": "ipf.glue2.modules.ExtendedModApplicationsStep" },
+    {
+      "name": "ipf.glue2.modules.ExtendedModApplicationsStep",
+      "params": {
+        "default_support_contact": [
+          {
+            "GlobalID": "support.access-ci.org",
+            "Name": "ACCESS Support",
+            "Description": "ACCESS Support",
+            "ShortName": "ACCESS",
+            "ContactURL": "https://support.access-ci.org"
+          }
+        ]
+      }
+    },
     {
       "name": "ipf.publish.FileStep",
       "params": {

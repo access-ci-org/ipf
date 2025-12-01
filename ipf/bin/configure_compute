@@ -4,7 +4,7 @@ INSTALL_DIR=___INSTALL_DIR___
 CLEANSE="$INSTALL_DIR"/etc/cleanse.conf
 AMQP_FN="$INSTALL_DIR"/etc/amqp.conf
 COMMON_FN="$INSTALL_DIR"/etc/common.conf
-WORKFLOW_NAME=extmodules
+WORKFLOW_NAME=compute
 CONFIGS=( $( ls "$INSTALL_DIR"/etc/configure_"${WORKFLOW_NAME}"*.conf ) )
 PYTHON="$INSTALL_DIR"/.venv/bin/python
 
@@ -17,7 +17,7 @@ PYTHON="$INSTALL_DIR"/.venv/bin/python
 for cfg in "${CONFIGS[@]}"; do
   source "$CLEANSE" #unset var settings from any previous run
   [[ -r "$COMMON_FN" ]] && source "$COMMON_FN" #read in common settings
-  source "$cfg" #read in new var settings for this specific run
+  source "$cfg" #read in var settings for this specific run
 
   # create workflow files
   $PYTHON "$INSTALL_DIR"/configure/configure_workflows.py \
@@ -26,13 +26,17 @@ for cfg in "${CONFIGS[@]}"; do
     ${PUBLISH:+--publish} \
     ${AMQP_USERNAME:+--amqp_username $AMQP_USERNAME} \
     ${AMQP_PASSWORD:+--amqp_password $AMQP_PASSWORD} \
-    ${AMQP_CERTFILE:+--amqp_certfile "$AMQP_CERTFILE"} \
-    ${AMQP_KEYFILE:+--amqp_keyfile "$AMQP_KEYFILE"} \
+    ${AMQP_CERTFILE:+--amqp_certificate $AMQP_CERTIFICATE} \
+    ${AMQP_KEYFILE:+--amqp_certificate_key $AMQP_CERTIFICATE_KEY} \
     ${ENVIRONMENT:+--environment "$ENVIRONMENT"} \
     ${MODULES:+--modules "$MODULES"} \
-    ${LMOD_CACHE_FILE:+--lmod_cache_file "$LMOD_CACHE_FILE"} \
-    ${MODULES_EXCLUDE:+--modules_exclude "$MODULES_EXCLUDE"} \
-    ${SUPPORT_CONTACT:+--support_contact "$SUPPORT_CONTACT"} \
-    ${MODULES_INTERVAL:+--modules_interval $MODULES_INTERVAL} \
+    ${SCHEDULER:+--scheduler $SCHEDULER} \
+    ${SCHEDULER_PARAMS:+--scheduler_params "$SCHEDULER_PARAMS"} \
+    ${COMPUTE_INTERVAL:+--compute_interval $COMPUTE_INTERVAL} \
+    ${CITY:+--city "$CITY"} \
+    ${ORGANIZATION_NAME:+--organization_name "$ORGANIZATION_NAME"} \
+    ${COUNTRY:+--country "$COUNTRY"} \
+    ${LATITUDE:+--latitude "$LATITUDE"} \
+    ${LONGITUDE:+--longitude "$LONGITUDE"} \
 
 done #for cfg in "${CONFIGS[@]}"; do

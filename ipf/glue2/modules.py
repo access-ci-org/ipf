@@ -498,7 +498,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
             index = env.AppName.index("/"+env.AppVersion)
             env.AppName = env.AppName[:index]
         except ValueError as e:
-            self.warning("%s" % e)
+            self.debug(f'{e} >>{env.AppName}<<')
 
         handle = application.ApplicationHandle()
         handle.Type = ApplicationHandle.MODULE

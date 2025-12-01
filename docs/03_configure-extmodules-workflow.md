@@ -1,15 +1,17 @@
 # Setup the extmodules workflow
 ## Configure the extmodules workflow
-1. Set variables for your site (for upgrade or re-install, skip this step)
+1. Set variables for your site (SKIP this step if upgrading or re-installing)
    * ```bash
      cp -n ~/ipf/etc/configure_extmodules.conf.sample ~/ipf/etc/configure_extmodules.conf
-     vim ~/ipf/etc/configure_extmodules.conf
-     cp -n ~/ipf/etc/amqp.conf.sample ~/ipf/etc/amqp.conf
-     vim ~/ipf/etc/amqp.conf
      ```
-   * Note: for initial testing, leave the PUBLISH variable empty.
-   * Note: if publishing for multiple resources, make one conf file per
-     resource. The filenames must match the glob `configure_extmodules*.conf`
+   * ```bash
+     vim ~/ipf/etc/configure_extmodules.conf
+     ```
+   * NOTE: Usually don't actually have to do anything unless setting up for multiple
+     resources from the same host.
+   * NOTE: if publishing for multiple resources:
+     * Ensure `RESOURCE_NAME` is unique for each extmodules workflow.
+     * Make one conf file per resource. The filenames must match the glob `configure_extmodules*.conf`
 
 1. Run the configure script
    * ```bash
@@ -34,7 +36,7 @@
 ## Test the publishing setup
 1. Enable publishing
    * ```bash
-     sed -i -e '/PUBLISH=/cPUBLISH=1' ~/ipf/etc/configure_extmodules*.conf
+     sed -i -e '/PUBLISH=/cPUBLISH=1' ~/ipf/etc/common.conf
      ```
 1. Re-run the configure script
    * ```bash
@@ -55,6 +57,9 @@ a day until stopped manually or the system is rebooted.
 ```bash
 bash ~/ipf/bin/save_configs.sh
 ```
+
+## Next - configure job queue publishing
+Next: [Configure job queue publishing](04_configure-compute-workflow.md)
 
 # Setup recurring runs for production
 

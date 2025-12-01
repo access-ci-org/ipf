@@ -1,0 +1,28 @@
+# What scheduler is running (slurm, pbs)
+# (required)
+SCHEDULER=
+
+# RP information
+# (required)
+ORGANIZATION_NAME="Name of Center"
+CITY=City
+COUNTRY=USA
+LATITUDE=38.000
+LONGITUDE=-90.000
+
+# Interval in seconds for the compute workflow to wait before rerunning
+# (required)
+COMPUTE_INTERVAL=3600
+
+# comma delimited key:value pairs for parameters for your scheduler
+# (optional)
+SCHEDULER_PARAMS=
+
+###
+# COMMON
+# - anything from common.conf can be set here if need to override
+#   just for this workflow
+# - otherwise, the value from common.conf will be used
+###
+#PUBLISH=
+#RESOURCE_NAME=

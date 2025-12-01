@@ -1,5 +1,5 @@
-# Set either CERTIFICATE or username/passwd
-AMQP_CERTIFICATE=
-AMQP_CERTIFICATE_KEY=
-AMQP_PASSWORD=
+# Set either username/password OR certfile/keyfile
 AMQP_USERNAME=
+AMQP_PASSWORD=
+AMQP_CERTFILE=
+AMQP_KEYFILE=

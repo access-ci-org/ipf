@@ -7,7 +7,7 @@
 INSTALL_DIR=___INSTALL_DIR___
 . ${INSTALL_DIR}/lib/utils.sh
 INIT_DIR="$INSTALL_DIR"/etc/ipf/init.d
-INIT_FILES=( $( find "$INIT_DIR" -type f -name '*extmodules' ) )
+INIT_FILES=( $( find "$INIT_DIR" -mindepth 1 -maxdepth 1 -type f -name '*glue2*' ! -name '*backup*' ) )
 PRG=$( basename "$0" )
 VAR_DIR="$INSTALL_DIR"/var/ipf
 WORKFLOW_DIR="$INSTALL_DIR"/etc/ipf/workflow/glue2
@@ -44,7 +44,7 @@ ENDHELP
 ACTION=
 case $1 in
   -h|--help|help) print_usage; exit 0;;
-  ls|list) ACTION=ls;;
+  ls|list) ACTION=list;;
   st|status) ACTION=status;;
   go|start) ACTION=start;;
   stop|kill|end) ACTION=stop;;
