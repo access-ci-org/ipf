@@ -24,7 +24,7 @@ from ipf.error import StepError
 from ipf.urnprefix import IPF_URN_PREFIX
 from . import application
 from . import service
-from .types import AppEnvState, ApplicationHandle
+from .glue2types import AppEnvState, ApplicationHandle
 
 #######################################################################################################################
 

@@ -17,7 +17,7 @@ VERBOSE=$YES
 
 # NO USER CHANGES AFTER THIS
 
-export UV_PYTHON=3.9 #python version required by IPF
+UV_PYTHON=3.12 #python version preferred by IPF
 UV_DIR="${INSTALL_DIR}"/uv
 UV="${UV_DIR}"/uv
 VENV="$INSTALL_DIR"/.venv
@@ -78,6 +78,8 @@ mk_venv() {
     export UV_PYTHON_INSTALL_DIR="${UV_DIR}"/python
     export UV_NO_CACHE=1
     export UV_MANAGED_PYTHON=1
+    export UV_PYTHON
+    [[ -n "${IPF_UV_PYTHON}" ]] && UV_PYTHON="${IPF_UV_PYTHON}"
     "$UV" venv "$VENV"
     success "Python venv created at '$VENV'"
     "${V_PYTHON}" -m ensurepip
@@ -117,7 +119,7 @@ install_ipf_pre_release() {
     --pre \
     --no-deps \
     --index-url https://test.pypi.org/simple/ \
-    ipf \
+    ipf"${IPF_INSTALL_VERSION:+==$IPF_INSTALL_VERSION}" \
     && success "Installed dev version of ipf"
 }
 
@@ -126,7 +128,7 @@ install_ipf() {
   [[ $DEBUG -eq $YES ]] && set -x
   "${V_PYTHON}" -m pip install \
     --upgrade \
-    ipf \
+    ipf"${IPF_INSTALL_VERSION:+==$IPF_INSTALL_VERSION}" \
     && success "Ipf and dependencies installed"
 }
 

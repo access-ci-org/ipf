@@ -17,7 +17,7 @@
 
 import platform
 import socket
-import pkg_resources
+import importlib.metadata
 import os
 import json
 
@@ -37,7 +37,7 @@ class IPFVersionStep(Step):
     def __init__(self):
         Step.__init__(self)
 
-        self.description = "produces an IPF Version document using the pkg_resources version"
+        self.description = "produces an IPF Version document"
         self.time_out = 5
         self.produces = [IPFVersion]
         self._acceptParameter(
@@ -48,8 +48,8 @@ class IPFVersionStep(Step):
             ipf_version = self.params["ipf_version"]
         except KeyError:
             try:
-                ipf_version = pkg_resources.get_distribution("IPF").version
-            except:
+                ipf_version = importlib.metadata.version( "ipf" )
+            except importlib.metadata.PackageNotFoundError:
                 ipf_version = "unknown"
 
         self._output(IPFVersion(ipf_version))

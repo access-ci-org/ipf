@@ -34,7 +34,7 @@ import glue2.computing_manager
 import glue2.computing_service
 import glue2.computing_share
 import glue2.execution_environment
-import glue2.types
+import glue2.glue2types
 
 from . import accelerator_environment
 from . import computing_manager_accel_info
@@ -412,9 +412,9 @@ class ApplicationsStep(glue2.application.ApplicationsStep, Authentication):
         # env.Description = ???
         # env.Repository =
         if image.status == "ACTIVE":
-            env.State = glue2.types.AppEnvState.INSTALLED_NOT_VERIFIED
+            env.State = glue2.glue2types.AppEnvState.INSTALLED_NOT_VERIFIED
         elif image.status == "SAVING":
-            env.State = glue2.types.AppEnvState.INSTALLABLE
+            env.State = glue2.glue2types.AppEnvState.INSTALLABLE
         else:
             self.warning("unknown image status: "+image.status)
         env.Extension["Updated"] = image.updated

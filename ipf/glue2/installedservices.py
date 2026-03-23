@@ -25,7 +25,7 @@ from . import service
 #from . import endpoint
 from .step import GlueStep
 #from .step import computing_service
-from .types import AppEnvState, ApplicationHandle
+from .glue2types import AppEnvState, ApplicationHandle
 from . import computing_activity
 from . import computing_manager
 from . import computing_service

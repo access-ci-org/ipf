@@ -1,3 +1,10 @@
+for 1.9.9
+* CTT-947 support for python 3.12
+  . use importlib.metadata for version (instead of setuptool's pkg_resources)
+* Renamed glue2/types.py so that in python 3.9 and greater, it doesn't conflict with functool's types.py. (Also changed IPF references from types to glue2types). Credit: Eric Blau
+* utils to make lmod cache and compare spider to ipf
+* faq how to compare module spider with ipf
+
 for 1.9.8
 CTT-986 include uv installer (instead of relying on cloud version)
 
