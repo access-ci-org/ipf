@@ -28,7 +28,7 @@ install the latest version of ipf?".
      rm -rf ~/ipf ~/ipf-setup.sh
      ```
 
-1. Follow the [Installation Guide](install.md) again starting from the top
+1. Follow the [Installation Guide](01_install.md) again starting from the top
 
 1. The backed up config files will have been restored. Generate the workflow
    files
@@ -41,7 +41,7 @@ install the latest version of ipf?".
      ~/ipf/bin/wfm start
      ```
 1. Check the published data
-   * See steps in [Configure Software Modules Publishing](configure-extmodules-workflow.md)
+   * See steps in [Configure Software Modules Publishing](03_configure-extmodules-workflow.md)
 
 
 ## Can I configure multiple workflows of the same type?

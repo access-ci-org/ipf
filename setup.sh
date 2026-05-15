@@ -6,22 +6,24 @@ NO=1  #no touchee
 
 # ###
 # User might want to change these, though should use environment vars
-# ###
+
 INSTALL_DIR="${IPF_INSTALL_DIR:-$HOME/ipf}"
 DEBUG=$YES
 VERBOSE=$YES
-# ###
+
 # END OF USER CONFIGURABLE SECTION
 # ###
 
 
 # NO USER CHANGES AFTER THIS
+
+export UV_PYTHON=3.9 #python version required by IPF
+UV_DIR="${INSTALL_DIR}"/uv
+UV="${UV_DIR}"/uv
 VENV="$INSTALL_DIR"/.venv
 V_PYTHON="$VENV"/bin/python
-USER_CONF="$HOME"/.config/ipf
-SYSTEM_PYTHON=
-SITE_PACKAGES=
-IPF_PATH=
+SITE_PACKAGES=  #created by mk_venv()
+IPF_PATH=       #created by mk_venv()
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'  # No Color
@@ -57,22 +59,30 @@ debug() {
 }
 
 
-get_system_python() {
-  SYSTEM_PYTHON=$(which python3) 2>/dev/null
-  [[ -z "$SYSTEM_PYTHON" ]] && {
-    SYSTEM_PYTHON=$IPF_PYTHON_TO_USE
+install_uv() {
+  [[ $DEBUG -eq $YES ]] && set -x
+  [[ -f "${UV}" ]] || {
+    export UV_UNMANAGED_INSTALL="${UV_DIR}"
+    UV_URL=https://astral.sh/uv/install.sh
+    UV_INSTALLER="${UV_DIR}"/uv_installer.sh
+    curl -LsSf --create-dirs "${UV_URL}" -o "${UV_INSTALLER}"
+    sh "${UV_INSTALLER}"
   }
-  [[ -z "$SYSTEM_PYTHON" ]] && die "Unable to find Python on this system."
-  success "Found system python at '$SYSTEM_PYTHON'"
 }
 
 
 mk_venv() {
   [[ $DEBUG -eq $YES ]] && set -x
   [[ -d "$VENV" ]] || {
-    "$SYSTEM_PYTHON" -m venv "$VENV"
+    export UV_PYTHON_INSTALL_DIR="${UV_DIR}"/python
+    export UV_NO_CACHE=1
+    export UV_MANAGED_PYTHON=1
+    "$UV" venv "$VENV"
     success "Python venv created at '$VENV'"
+    "${V_PYTHON}" -m ensurepip
+    success "Ensure native pip is available"
     "${V_PYTHON}" -m pip install --upgrade pip
+    success "Updated to latest pip version"
   }
   SITE_PACKAGES=$(
     "$V_PYTHON" -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
@@ -82,8 +92,7 @@ mk_venv() {
 
 
 is_pre_release_allowed() {
-  # to install the latest pre-release version, do
-  # export IPF_ALLOW_PRE_RELEASE=yes
+  # to install the latest pre-release version: export IPF_ALLOW_PRE_RELEASE=yes
   [[ $DEBUG -eq $YES ]] && set -x
   local _retval=$NO
   if [[  "$IPF_ALLOW_PRE_RELEASE" == "yes" \
@@ -100,6 +109,7 @@ is_pre_release_allowed() {
 
 install_ipf_pre_release() {
   [[ $DEBUG -eq $YES ]] && set -x
+  is_pre_release_allowed || return
   "${V_PYTHON}" -m pip install \
     --upgrade \
     --no-cache-dir \
@@ -118,7 +128,6 @@ install_ipf() {
     ipf \
     && success "Ipf and dependencies installed"
 }
-
 
 update_files() {
   [[ $DEBUG -eq $YES ]] && set -x
@@ -154,14 +163,13 @@ restore_config_links() {
 
 [[ $DEBUG -eq $YES ]] && set -x
 
-get_system_python
+install_uv
 
 mk_venv
 
-# installs ipf pre-release (only ipf, no deps)
-is_pre_release_allowed && install_ipf_pre_release
+install_ipf_pre_release #won't do anything if pre-release is not allowed
 
-install_ipf  #installs deps (and ipf if not done above)
+install_ipf
 
 update_files
 
