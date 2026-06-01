@@ -63,10 +63,11 @@ install_uv() {
   [[ $DEBUG -eq $YES ]] && set -x
   [[ -f "${UV}" ]] || {
     export UV_UNMANAGED_INSTALL="${UV_DIR}"
-    UV_URL=https://astral.sh/uv/install.sh
+    UV_URL=https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads/master/utils/uv_installer.sh
+    [[ -n "${IPF_UV_URL}" ]] && UV_URL="${IPF_UV_URL}"
     UV_INSTALLER="${UV_DIR}"/uv_installer.sh
     curl -LsSf --create-dirs "${UV_URL}" -o "${UV_INSTALLER}"
-    sh "${UV_INSTALLER}"
+    sh "${UV_INSTALLER}" || die 'failed to install uv'
   }
 }
 

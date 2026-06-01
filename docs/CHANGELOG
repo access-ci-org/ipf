@@ -1,3 +1,6 @@
+for 1.9.8
+CTT-986 include uv installer (instead of relying on cloud version)
+
 for 1.9.7
 * CTT-954 Install with uv to control python version
 * Fix #30 (fix link to "install guide" on page FAQ)
