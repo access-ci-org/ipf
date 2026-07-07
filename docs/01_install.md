@@ -15,10 +15,14 @@ Next: [First time setup](02_configure-common.md)
 # Advanced
 
 ## Custom Options
+To enable one or more custom options, set the indicated environment variable(s)
+BEFORE running `ipf-setup.sh`.
 
 ### Customize installation dir
-* Set and export environment variable IPF_INSTALL_DIR (before running
-  `ipf-setup.sh`)
-Note: The default install dir is `~/ipf`.
-* Remember to replace `~/ipf` with `$IPF_INSTALL_DIR`
-in all the commands referenced in these docs.
+* `export IPF_INSTALL_DIR=<PATH_TO_INSTALL_DIR>`
+
+### Pin version of IPF to install
+* `export IPF_INSTALL_VERSION=<VERSION_STRING>`
+
+### Install a development version from test.pypi.org
+* `export IPF_ALLOW_PRE_RELEASE=yes`
