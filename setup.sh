@@ -117,7 +117,7 @@ install_ipf_pre_release() {
     --pre \
     --no-deps \
     --index-url https://test.pypi.org/simple/ \
-    ipf \
+    ipf"${IPF_INSTALL_VERSION:+==$IPF_INSTALL_VERSION}" \
     && success "Installed dev version of ipf"
 }
 
@@ -126,7 +126,7 @@ install_ipf() {
   [[ $DEBUG -eq $YES ]] && set -x
   "${V_PYTHON}" -m pip install \
     --upgrade \
-    ipf \
+    ipf"${IPF_INSTALL_VERSION:+==$IPF_INSTALL_VERSION}" \
     && success "Ipf and dependencies installed"
 }
 
