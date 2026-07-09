@@ -29,19 +29,25 @@ IPF_BIN="${IPF_INSTALL_DIR}"/bin
 VENV="${IPF_INSTALL_DIR}"/.venv
 URL_BASE='https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads'
 IPF_SETUP_URL="${URL_BASE}"/"${IPF_GIT_BRANCH:-master}"/setup.sh
-ACTION="${MANUAL:+echo}"
+if [[ -n "${MANUAL}" ]] ; then
+  ACTION=echo
+  set +x
+  echo 'COMMANDS THAT WOULD HAVE BEEN RUN'
+  echo '---------------------------------'
+fi
 
 [[ -d "${IPF_BIN}" ]] && {
-  ${ACTION}" bash "${IPF_BIN}"/wfm stop
-  ${ACTION}" rm -rf "${IPF_INSTALL_DIR}"/
+  ${ACTION} bash "${IPF_BIN}"/wfm stop
+  ${ACTION} rm -rf "${IPF_INSTALL_DIR}"/
 }
 
-${ACTION}" rm -f "${IPF_SETUP}"
+${ACTION} rm -f "${IPF_SETUP}"
 
-${ACTION}" curl -o "${IPF_SETUP}" "${IPF_SETUP_URL}"
+${ACTION} curl -o "${IPF_SETUP}" "${IPF_SETUP_URL}"
 
-${ACTION}" bash "${IPF_SETUP}"
+${ACTION} bash "${IPF_SETUP}"
 
-${ACTION}" "${VENV}"/bin/python --version
+${ACTION} "${VENV}"/bin/python --version
 
-${ACTION}" "${VENV}"/bin/python -m pip freeze
+${ACTION} "${VENV}"/bin/python -m pip freeze
+
