@@ -27,9 +27,9 @@ IPF_SETUP="${HOME}"/ipf-setup.sh
 
 IPF_BIN="${IPF_INSTALL_DIR}"/bin
 VENV="${IPF_INSTALL_DIR}"/.venv
-URL_BASE='https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads'
-IPF_SETUP_URL="${URL_BASE}"/"${IPF_GIT_BRANCH:-master}"/setup.sh
-export IPF_UV_URL="${URL_BASE}"/"${IPF_GIT_BRANCH:-master}"/utils/uv_installer.sh
+URL_BASE="https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads/${IPF_GIT_BRANCH:-master}"
+IPF_SETUP_URL="${URL_BASE}"/setup.sh
+export IPF_UV_URL="${URL_BASE}"/utils/uv_installer.sh
 if [[ -n "${MANUAL}" ]] ; then
   ACTION=echo
   set +x
