@@ -284,8 +284,10 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                 spider_table = lua.globals().spiderT
                 spiderT = self._convert_lua_table(spider_table)
                 modules_rc_table = lua.globals().mrcT
-                mrcT = self._convert_lua_table(modules_rc_table)
-                hiddenT = mrcT['hiddenT']
+                #As of lmod 8.8, the cache file no longer has a mrcT table
+                #so we'd better not try to read it.
+                #mrcT = self._convert_lua_table(modules_rc_table)
+                #hiddenT = mrcT['hiddenT']
 
                 fileTs = []
                 metaModuleTs = []
@@ -309,7 +311,12 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                     # If neither the filename nor the filename's directory
                     # are in hiddenT, then we can add the module
                     for modulename in fileT:
-                        if (fileT[modulename]['fn'] not in hiddenT.keys() and fileT[modulename]['fn'][:fileT[modulename]['fn'].rfind('/')] not in hiddenT.keys()):
+                        #One way to tell lmod to hide modules is by having the
+                        #first character of the module filename be a "."
+                        #So we must detect this and not report such files
+                        #dirname=fileT[modulename]['fn'][:fileT[modulename]['fn'].rfind('/')]
+                        filename=fileT[modulename]['fn'][fileT[modulename]['fn'].rfind('/')+1:]
+                        if not filename.startswith('.'):
                             self._addModule(fileT[modulename]['fn'], modulename, fileT[modulename]['Version'], apps)
 
             except Exception as e:

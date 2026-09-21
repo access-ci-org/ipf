@@ -57,9 +57,9 @@ export IPF_INSTALL_DIR
 # set ACTION if doing manual run
 if [[ -n "${MANUAL}" ]] ; then
   ACTION=echo
-  set +x
   echo 'COMMANDS THAT WOULD HAVE BEEN RUN'
   echo '---------------------------------'
+  set +x
 fi
 
 # stop anything running
