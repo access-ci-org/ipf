@@ -32,20 +32,18 @@ module_config_as_json() {
 
 
 version_info() {
-  # keys='["tcl_version", "luaV", "lmodV"]'
-  # module_config_as_json \
-  # | "${JQ}" \
-  #   --argjson keys "${keys}" \
-  #   '.configT | with_entries(select(.key as $k | $keys | index($k)))'
-
+  echo "LMOD Version Info"
+  echo "-----------------"
   module_config_as_json \
   | "${JQ}" '.configT | {lmodV, tcl_version, luaV}'
 }
 
 
 cache_info() {
+  echo "LMOD Cache Info"
+  echo "---------------"
   module_config_as_json \
-  | "${JQ}" '.cache'
+  | "${JQ}" '.cache | flatten | .[]'
 }
 
 
@@ -56,6 +54,8 @@ cleanup() {
 ###
 # MAIN
 ###
+
+find_module
 
 version_info
 
