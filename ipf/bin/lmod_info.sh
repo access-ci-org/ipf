@@ -43,7 +43,8 @@ cache_info() {
   echo "LMOD Cache Info"
   echo "---------------"
   module_config_as_json \
-  | "${JQ}" '.cache | flatten | .[]'
+  | "${JQ}" '.cache | flatten | .[]' \
+  | xargs -r tree -fpugsD
 }
 
 
