@@ -98,6 +98,13 @@ Check the spelling in the module lua file. Ipf reads the module name from the
 lua file.
 
 ### General troubleshooting hints
+* Get the directory where logs are stored
+  1. ```
+~/ipf/bin/wfm ls \
+| awk '/extmodules_periodic.log/ {print $NF}' \
+| head -1 \
+| xargs -r -n1 dirname
+  ```
 * Check the ipf log file for warnings
   1. Log file location is given in the output of `~/ipf/bin/wfm ls`
   1. `grep -iE 'warning|error' $(~/ipf/bin/wfm ls | awk '$1=="LOG:" {print $2}')`
