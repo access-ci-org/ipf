@@ -100,13 +100,14 @@ lua file.
 ### General troubleshooting hints
 * Check the ipf log file for warnings
   1. Log file location is given in the output of `~/ipf/bin/wfm ls`
-  1. `grep -F WARNING $(~/ipf/bin/wfm ls | awk '$1=="LOG:" {print $2}')`
+  1. `grep -iE 'warning|error' $(~/ipf/bin/wfm ls | awk '$1=="LOG:" {print $2}')`
 * Compare output from module spider with ipf collected data
   1. `mkdir -p ~/ipf/utils`
   1. `pushd ~/ipf/utils`
-  1. `curl -O https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads/master/utils/module_spider.sh`
-  1. `curl -O https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads/master/utils/ipf_pkgs.sh`
-  1. `comm -3 <(./module_spider.sh) <(ipf_pkgs.sh)`
+  1. `curl -O https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads/master/utils/ls_pkgs_spider.sh`
+  1. `curl -O https://raw.githubusercontent.com/access-ci-org/ipf/refs/heads/master/utils/ls_pkgs_ipf.sh`
+  1. `chmod +x ./*.sh`
+  1. `comm -3 <(./ls_pkgs_spider.sh) <(./ls_pkgs_ipf.sh)`
   1. For any unexpected differences:
      1. Check lmod lua file permissions and contents
      1. Check lmod cache file contents and age
